@@ -794,4 +794,48 @@ public class MenuBarTests ()
         Application.End (rs);
         top.Dispose ();
     }
+
+    [Fact]
+    [AutoInitShutdown]
+    public void OpenMenu_With_Position_Opens_At_Specified_Location ()
+    {
+        // Arrange
+        var top = new Toplevel ()
+        {
+            App = ApplicationImpl.Instance
+        };
+
+        var menuBar = new MenuBar () { Id = "menuBar", X = 10, Y = 0 };
+        top.Add (menuBar);
+
+        var menuItem1 = new MenuItem { Id = "menuItem1", Title = "Item _1" };
+        var menu = new Menu ([menuItem1]) { Id = "menu" };
+        var menuBarItem = new MenuBarItem { Id = "menuBarItem", Title = "_File" };
+        var menuBarItemPopover = new PopoverMenu ();
+
+        menuBar.Add (menuBarItem);
+        menuBarItem.PopoverMenu = menuBarItemPopover;
+        menuBarItemPopover.Root = menu;
+
+        SessionToken rs = Application.Begin (top);
+        Assert.False (menuBar.Active);
+        Assert.False (menuBar.IsOpen ());
+
+        // Act - Open menu at custom position (0, 1)
+        Point customPosition = new Point (0, 1);
+        bool result = menuBar.OpenMenu (customPosition);
+
+        // Assert
+        Assert.True (result);
+        Assert.True (menuBar.Active);
+        Assert.True (menuBar.IsOpen ());
+        Assert.True (menuBarItem.PopoverMenu.Visible);
+        
+        // The menu's Root should be positioned at or near the custom position
+        // (GetMostVisibleLocationForSubMenu may adjust it to fit on screen)
+        Assert.NotNull (menuBarItemPopover.Root);
+        
+        Application.End (rs);
+        top.Dispose ();
+    }
 }

@@ -236,12 +236,33 @@ public class MenuBar : Menu, IDesignable
     ///         The first menu item in the PopoverMenu will be selected and focused.
     ///     </para>
     /// </remarks>
-    public bool OpenMenu ()
+    public bool OpenMenu () { return OpenMenu (null); }
+
+    /// <summary>
+    ///     Opens the first menu item with a <see cref="PopoverMenu"/> at the specified screen position. 
+    ///     This is useful for programmatically opening the menu, for example when using the MenuBar as a dropdown list.
+    /// </summary>
+    /// <param name="position">
+    ///     The screen position at which to open the menu. If <see langword="null"/>, the menu will be positioned
+    ///     at the default location (bottom-left of the first MenuBarItem).
+    /// </param>
+    /// <returns><see langword="true"/> if a menu was opened; <see langword="false"/> otherwise.</returns>
+    /// <remarks>
+    ///     <para>
+    ///         This method activates the MenuBar and shows the first MenuBarItem that has a PopoverMenu.
+    ///         The first menu item in the PopoverMenu will be selected and focused.
+    ///     </para>
+    ///     <para>
+    ///         When using MenuBar as a dropdown button next to a TextField, you can position the menu
+    ///         to align with the left edge of the TextField by passing the TextField's screen position.
+    ///     </para>
+    /// </remarks>
+    public bool OpenMenu (Point? position)
     {
         if (SubViews.OfType<MenuBarItem> ().FirstOrDefault (mbi => mbi.PopoverMenu is { }) is { } first)
         {
             Active = true;
-            ShowItem (first);
+            ShowItem (first, position);
 
             return true;
         }
@@ -401,7 +422,11 @@ public class MenuBar : Menu, IDesignable
     ///     Shows the specified popover, but only if the menu bar is active.
     /// </summary>
     /// <param name="menuBarItem"></param>
-    private void ShowItem (MenuBarItem? menuBarItem)
+    /// <param name="position">
+    ///     The screen position at which to show the popover. If <see langword="null"/>, the menu will be positioned
+    ///     at the default location (bottom-left of the MenuBarItem).
+    /// </param>
+    private void ShowItem (MenuBarItem? menuBarItem, Point? position = null)
     {
         // Logging.Debug ($"{Title} - {menuBarItem?.Id}");
 
@@ -447,7 +472,8 @@ public class MenuBar : Menu, IDesignable
         if (menuBarItem.PopoverMenu is { })
         {
             menuBarItem.PopoverMenu.App ??= App;
-            menuBarItem.PopoverMenu.MakeVisible (new Point (menuBarItem.FrameToScreen ().X, menuBarItem.FrameToScreen ().Bottom));
+            Point menuPosition = position ?? new Point (menuBarItem.FrameToScreen ().X, menuBarItem.FrameToScreen ().Bottom);
+            menuBarItem.PopoverMenu.MakeVisible (menuPosition);
         }
 
         menuBarItem.Accepting += OnMenuItemAccepted;
