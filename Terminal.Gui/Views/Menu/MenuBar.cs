@@ -225,6 +225,30 @@ public class MenuBar : Menu, IDesignable
     /// <exception cref="NotImplementedException"></exception>
     public bool IsOpen () { return SubViews.OfType<MenuBarItem> ().Count (sv => sv is { PopoverMenuOpen: true }) > 0; }
 
+    /// <summary>
+    ///     Opens the first menu item with a <see cref="PopoverMenu"/>. This is useful for programmatically opening
+    ///     the menu, for example when using the MenuBar as a dropdown list.
+    /// </summary>
+    /// <returns><see langword="true"/> if a menu was opened; <see langword="false"/> otherwise.</returns>
+    /// <remarks>
+    ///     <para>
+    ///         This method activates the MenuBar and shows the first MenuBarItem that has a PopoverMenu.
+    ///         The first menu item in the PopoverMenu will be selected and focused.
+    ///     </para>
+    /// </remarks>
+    public bool OpenMenu ()
+    {
+        if (SubViews.OfType<MenuBarItem> ().FirstOrDefault (mbi => mbi.PopoverMenu is { }) is { } first)
+        {
+            Active = true;
+            ShowItem (first);
+
+            return true;
+        }
+
+        return false;
+    }
+
     private bool _active;
 
     /// <summary>

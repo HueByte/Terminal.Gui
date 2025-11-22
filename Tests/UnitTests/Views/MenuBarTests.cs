@@ -718,4 +718,80 @@ public class MenuBarTests ()
         Application.End (rs);
         top.Dispose ();
     }
+
+    [Fact]
+    [AutoInitShutdown]
+    public void OpenMenu_Opens_First_MenuBarItem ()
+    {
+        // Arrange
+        var top = new Toplevel ()
+        {
+            App = ApplicationImpl.Instance
+        };
+
+        var menuBar = new MenuBar () { Id = "menuBar" };
+        top.Add (menuBar);
+
+        var menuItem1 = new MenuItem { Id = "menuItem1", Title = "Item _1" };
+        var menuItem2 = new MenuItem { Id = "menuItem2", Title = "Item _2" };
+        var menu = new Menu ([menuItem1, menuItem2]) { Id = "menu" };
+        var menuBarItem = new MenuBarItem { Id = "menuBarItem", Title = "_File" };
+        var menuBarItemPopover = new PopoverMenu ();
+
+        menuBar.Add (menuBarItem);
+        menuBarItem.PopoverMenu = menuBarItemPopover;
+        menuBarItemPopover.Root = menu;
+
+        SessionToken rs = Application.Begin (top);
+        Assert.False (menuBar.Active);
+        Assert.False (menuBar.IsOpen ());
+
+        // Act
+        bool result = menuBar.OpenMenu ();
+
+        // Assert
+        Assert.True (result);
+        Assert.True (menuBar.Active);
+        Assert.True (menuBar.IsOpen ());
+        Assert.True (menuBar.CanFocus);
+        Assert.True (menuBarItem.PopoverMenu.Visible);
+        Assert.True (menuBarItem.PopoverMenu.HasFocus);
+        Assert.Equal (menuItem1, menu.SelectedMenuItem);
+
+        Application.End (rs);
+        top.Dispose ();
+    }
+
+    [Fact]
+    [AutoInitShutdown]
+    public void OpenMenu_Returns_False_When_No_MenuBarItem_With_PopoverMenu ()
+    {
+        // Arrange
+        var top = new Toplevel ()
+        {
+            App = ApplicationImpl.Instance
+        };
+
+        var menuBar = new MenuBar () { Id = "menuBar" };
+        top.Add (menuBar);
+
+        var menuBarItem = new MenuBarItem { Id = "menuBarItem", Title = "_File" };
+        menuBar.Add (menuBarItem);
+        // Note: No PopoverMenu set
+
+        SessionToken rs = Application.Begin (top);
+        Assert.False (menuBar.Active);
+        Assert.False (menuBar.IsOpen ());
+
+        // Act
+        bool result = menuBar.OpenMenu ();
+
+        // Assert
+        Assert.False (result);
+        Assert.False (menuBar.Active);
+        Assert.False (menuBar.IsOpen ());
+
+        Application.End (rs);
+        top.Dispose ();
+    }
 }
