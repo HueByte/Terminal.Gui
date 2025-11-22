@@ -9,8 +9,31 @@ namespace Terminal.Gui.Views;
 ///     <see cref="PopoverMenu"/> that is shown when the <see cref="MenuBarItem"/> is selected.
 /// </summary>
 /// <remarks>
-///     MenuBars may be hosted by any View and will, by default, be positioned the full width across the top of the View's
-///     Viewport.
+///     <para>
+///         MenuBars may be hosted by any View and will, by default, be positioned the full width across the top of the View's
+///         Viewport.
+///     </para>
+///     <para>
+///         <strong>Using MenuBar as a Dropdown List (ComboBox Alternative):</strong>
+///         MenuBar can be used as a dropdown list by configuring it with a single MenuBarItem that has a PopoverMenu.
+///         Use <see cref="OpenMenu()"/> to programmatically open the menu, and optionally specify a custom position
+///         with <see cref="OpenMenu(Point?)"/> to align it with another control (e.g., a TextField).
+///     </para>
+///     <code>
+///         var tf = new TextField { Width = 10 };
+///         var menuBarItem = new MenuBarItem ("▼", 
+///             new MenuItem [] {
+///                 new ("Item 1", () => tf.Text = "Item 1"),
+///                 new ("Item 2", () => tf.Text = "Item 2"),
+///                 new ("Item 3", () => tf.Text = "Item 3")
+///             });
+///         var mb = new MenuBar ([menuBarItem]) {
+///             Width = 1,
+///             Y = Pos.Top (tf),
+///             X = Pos.Right (tf)
+///         };
+///         mb.Enter += (s, e) => mb.OpenMenu (new Point (tf.FrameToScreen ().X, tf.FrameToScreen ().Bottom));
+///     </code>
 /// </remarks>
 public class MenuBar : Menu, IDesignable
 {
