@@ -1,6 +1,6 @@
 ﻿using Xunit.Abstractions;
 
-namespace UnitTests.ViewTests;
+namespace UnitTests.ViewBaseTests;
 
 public class SubViewTests
 {
@@ -12,7 +12,7 @@ public class SubViewTests
     //[AutoInitShutdown]
     //public void Initialized_Event_Will_Be_Invoked_When_Added_Dynamically ()
     //{
-    //    var t = new Toplevel { Id = "0" };
+    //    var t = new Runnable { Id = "0" };
 
     //    var w = new Window { Id = "t", Width = Dim.Fill (), Height = Dim.Fill () };
     //    var v1 = new View { Id = "v1", Width = Dim.Fill (), Height = Dim.Fill () };
@@ -83,7 +83,7 @@ public class SubViewTests
 
     //    return;
 
-    //    void OnApplicationOnIteration (object s, IterationEventArgs a)
+    //    void OnApplicationOnIteration (object s, EventArgs<IApplication?> a)
     //    {
     //        var sv1 = new View { Id = "sv1", Width = Dim.Fill (), Height = Dim.Fill () };
 

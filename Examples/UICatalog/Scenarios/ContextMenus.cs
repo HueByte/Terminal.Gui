@@ -26,7 +26,7 @@ public class ContextMenus : Scenario
         {
             Title = GetQuitKeyAndName (),
             Arrangement = ViewArrangement.Fixed,
-            SchemeName = "Toplevel"
+            SchemeName = "Runnable"
         };
 
         _appWindow.Initialized += AppWindowOnInitialized;
@@ -49,7 +49,7 @@ public class ContextMenus : Scenario
             var text = "Context Menu";
             var width = 20;
 
-            CreateWinContextMenu ();
+            CreateWinContextMenu (ApplicationImpl.Instance);
 
             var label = new Label
             {
@@ -84,7 +84,11 @@ public class ContextMenus : Scenario
             _appWindow.MouseClick += OnAppWindowOnMouseClick;
 
             CultureInfo originalCulture = Thread.CurrentThread.CurrentUICulture;
-            _appWindow.Closed += (s, e) => { Thread.CurrentThread.CurrentUICulture = originalCulture; };
+            _appWindow.IsRunningChanged += (s, e) => {
+                                               if (!e.Value)
+                                               {
+                                                   Thread.CurrentThread.CurrentUICulture = originalCulture;
+                                               } };
         }
 
         void OnAppWindowOnMouseClick (object? s, MouseEventArgs e)
@@ -108,7 +112,7 @@ public class ContextMenus : Scenario
         }
     }
 
-    private void CreateWinContextMenu ()
+    private void CreateWinContextMenu (IApplication? app)
     {
         _winContextMenu = new (
                                [
@@ -122,7 +126,7 @@ public class ContextMenus : Scenario
                                    {
                                        Title = "_Configuration...",
                                        HelpText = "Show configuration",
-                                       Action = () => MessageBox.Query (
+                                       Action = () => MessageBox.Query (app,
                                                                         50,
                                                                         10,
                                                                         "Configuration",
@@ -140,7 +144,7 @@ public class ContextMenus : Scenario
                                                               Title = "_Setup...",
                                                               HelpText = "Perform setup",
                                                               Action = () => MessageBox
-                                                                           .Query (
+                                                                           .Query (app,
                                                                                    50,
                                                                                    10,
                                                                                    "Setup",
@@ -154,7 +158,7 @@ public class ContextMenus : Scenario
                                                               Title = "_Maintenance...",
                                                               HelpText = "Maintenance mode",
                                                               Action = () => MessageBox
-                                                                           .Query (
+                                                                           .Query (app,
                                                                                    50,
                                                                                    10,
                                                                                    "Maintenance",

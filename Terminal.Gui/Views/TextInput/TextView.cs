@@ -1121,6 +1121,7 @@ public class TextView : View, IDesignable
     public void PromptForColors ()
     {
         if (!ColorPicker.Prompt (
+                                 App!,
                                  "Colors",
                                  GetSelectedCellAttribute (),
                                  out Attribute newAttribute
@@ -1960,7 +1961,7 @@ public class TextView : View, IDesignable
         }
 
         SetWrapModel ();
-        string? contents = Clipboard.Contents;
+        string? contents = App?.Clipboard?.GetClipboardData ();
 
         if (_copyWithoutSelection && contents!.FirstOrDefault (x => x is '\n' or '\r') == 0)
         {
@@ -2363,7 +2364,7 @@ public class TextView : View, IDesignable
         OnUnwrappedCursorPosition ();
     }
 
-    private void AppendClipboard (string text) { Clipboard.Contents += text; }
+    private void AppendClipboard (string text) { App?.Clipboard?.SetClipboardData (App?.Clipboard?.GetClipboardData () + text); }
 
     private PopoverMenu CreateContextMenu ()
     {
@@ -3842,7 +3843,7 @@ public class TextView : View, IDesignable
 
             List<Cell> currentLine = GetCurrentLine ();
 
-            if (currentLine.Count > 0 && currentLine[CurrentColumn - 1].Grapheme == "\t")
+            if (currentLine.Count > 0 && currentLine [CurrentColumn - 1].Grapheme == "\t")
             {
                 _historyText.Add (new () { new (currentLine) }, CursorPosition);
 
@@ -4470,7 +4471,7 @@ public class TextView : View, IDesignable
     {
         if (text is { })
         {
-            Clipboard.Contents = text;
+            App?.Clipboard?.SetClipboardData (text);
         }
     }
 

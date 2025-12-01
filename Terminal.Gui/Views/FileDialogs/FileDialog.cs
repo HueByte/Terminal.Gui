@@ -51,7 +51,6 @@ public class FileDialog : Dialog, IDesignable
     private bool _currentSortIsAsc = true;
     private bool _disposed;
     private string? _feedback;
-    private bool _loaded;
 
     private bool _pushingState;
     private Dictionary<IDirectoryInfo, string> _treeRoots = new ();
@@ -106,9 +105,9 @@ public class FileDialog : Dialog, IDesignable
 
                                     e.Handled = true;
 
-                                    if (Modal)
+                                    if (IsModal)
                                     {
-                                        Application.RequestStop ();
+                                        (s as View)?.App?.RequestStop ();
                                     }
                                 };
 
@@ -436,18 +435,16 @@ public class FileDialog : Dialog, IDesignable
     }
 
     /// <inheritdoc/>
-    public override void OnLoaded ()
+    protected override void OnIsRunningChanged (bool newIsRunning)
     {
-        base.OnLoaded ();
+        base.OnIsRunningChanged (newIsRunning);
 
-        if (_loaded)
+        if (!newIsRunning)
         {
             return;
         }
 
         Arrangement |= ViewArrangement.Resizable;
-
-        _loaded = true;
 
         // May have been updated after instance was constructed
         _btnOk.Text = Style.OkButtonText;
@@ -468,7 +465,6 @@ public class FileDialog : Dialog, IDesignable
         Style.IconProvider.IsOpenGetter = _treeView.IsExpanded;
 
         _treeView.AddObjects (_treeRoots.Keys);
-#if MENU_V1
 
         // if filtering on file type is configured then create the ComboBox and establish
         // initial filtering by extension(s)
@@ -479,6 +475,7 @@ public class FileDialog : Dialog, IDesignable
             // Fiddle factor
             int width = AllowedTypes.Max (a => a.ToString ()!.Length) + 6;
 
+#if MENU_V1
             _allowedTypeMenu = new (
                                     "<placeholder>",
                                     _allowedTypeMenuItems = AllowedTypes.Select (
@@ -512,8 +509,8 @@ public class FileDialog : Dialog, IDesignable
                                                   };
 
             Add (_allowedTypeMenuBar);
-        }
 #endif
+        }
 
         // if no path has been provided
         if (_tbPath.Text.Length <= 0)
@@ -849,7 +846,7 @@ public class FileDialog : Dialog, IDesignable
     {
         IFileSystemInfo [] toDelete = GetFocusedFiles ()!;
 
-        if (FileOperationsHandler.Delete (toDelete))
+        if (FileOperationsHandler.Delete (App, toDelete))
         {
             RefreshState ();
         }
@@ -877,9 +874,9 @@ public class FileDialog : Dialog, IDesignable
 
         Canceled = false;
 
-        if (Modal)
+        if (IsModal)
         {
-            Application.RequestStop ();
+            App?.RequestStop ();
         }
     }
 
@@ -1039,7 +1036,7 @@ public class FileDialog : Dialog, IDesignable
     private void New ()
     {
         {
-            IFileSystemInfo created = FileOperationsHandler.New (_fileSystem!, State!.Directory);
+            IFileSystemInfo created = FileOperationsHandler.New (App, _fileSystem!, State!.Directory);
 
             if (created is { })
             {
@@ -1174,13 +1171,13 @@ public class FileDialog : Dialog, IDesignable
         PushState (State, false, false, false);
     }
 
-    private void Rename ()
+    private void Rename (IApplication? app)
     {
         IFileSystemInfo [] toRename = GetFocusedFiles ()!;
 
         if (toRename?.Length == 1)
         {
-            IFileSystemInfo newNamed = FileOperationsHandler.Rename (_fileSystem!, toRename.Single ());
+            IFileSystemInfo newNamed = FileOperationsHandler.Rename (app, _fileSystem!, toRename.Single ());
 
             if (newNamed is { })
             {
@@ -1230,7 +1227,7 @@ public class FileDialog : Dialog, IDesignable
         PopoverMenu? contextMenu = new (
                                         [
                                             new (Strings.fdCtxNew, string.Empty, New),
-                                            new (Strings.fdCtxRename, string.Empty, Rename),
+                                            new (Strings.fdCtxRename, string.Empty, () => Rename (App)),
                                             new (Strings.fdCtxDelete, string.Empty, Delete)
                                         ]);
 
@@ -1327,7 +1324,7 @@ public class FileDialog : Dialog, IDesignable
 
         if (keyEvent.KeyCode == (KeyCode.CtrlMask | KeyCode.R))
         {
-            Rename ();
+            Rename (App);
 
             return true;
         }
@@ -1649,9 +1646,7 @@ public class FileDialog : Dialog, IDesignable
 
     bool IDesignable.EnableForDesign ()
     {
-        Modal = false;
-        OnLoaded ();
-
+        OnIsRunningChanged (true);
         return true;
     }
 }

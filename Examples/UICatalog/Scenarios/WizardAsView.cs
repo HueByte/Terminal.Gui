@@ -21,6 +21,7 @@ public class WizardAsView : Scenario
                                        {
                                            Title = "_Restart Configuration...",
                                            Action = () => MessageBox.Query (
+                                                                            ApplicationImpl.Instance,
                                                                             "Wizard",
                                                                             "Are you sure you want to reset the Wizard and start over?",
                                                                             "Ok",
@@ -31,6 +32,7 @@ public class WizardAsView : Scenario
                                        {
                                            Title = "Re_boot Server...",
                                            Action = () => MessageBox.Query (
+                                                                            ApplicationImpl.Instance,
                                                                             "Wizard",
                                                                             "Are you sure you want to reboot the server start over?",
                                                                             "Ok",
@@ -41,6 +43,7 @@ public class WizardAsView : Scenario
                                        {
                                            Title = "_Shutdown Server...",
                                            Action = () => MessageBox.Query (
+                                                                            ApplicationImpl.Instance,
                                                                             "Wizard",
                                                                             "Are you sure you want to cancel setup and shutdown?",
                                                                             "Ok",
@@ -63,7 +66,7 @@ public class WizardAsView : Scenario
 
         // Set Modal to false to cause the Wizard class to render without a frame and
         // behave like an non-modal View (vs. a modal/pop-up Window).
-        wizard.Modal = false;
+       // wizard.Modal = false;
 
         wizard.MovingBack += (s, args) =>
                              {
@@ -80,13 +83,13 @@ public class WizardAsView : Scenario
         wizard.Finished += (s, args) =>
                            {
                                //args.Cancel = true;
-                               MessageBox.Query ("Setup Wizard", "Finished", "Ok");
+                               MessageBox.Query ((s as View)?.App, "Setup Wizard", "Finished", "Ok");
                                Application.RequestStop ();
                            };
 
         wizard.Cancelled += (s, args) =>
                             {
-                                int btn = MessageBox.Query ("Setup Wizard", "Are you sure you want to cancel?", "Yes", "No");
+                                int? btn = MessageBox.Query ((s as View)?.App, "Setup Wizard", "Are you sure you want to cancel?", "Yes", "No");
                                 args.Cancel = btn == 1;
 
                                 if (btn == 0)
@@ -123,7 +126,7 @@ public class WizardAsView : Scenario
                             {
                                 secondStep.Title = "2nd Step";
 
-                                MessageBox.Query (
+                                MessageBox.Query ((s as View)?.App,
                                                   "Wizard Scenario",
                                                   "This Wizard Step's title was changed to '2nd Step'",
                                                   "Ok"
@@ -145,11 +148,11 @@ public class WizardAsView : Scenario
         lastStep.HelpText =
             "The wizard is complete!\n\nPress the Finish button to continue.\n\nPressing Esc will cancel.";
 
-        Window topLevel = new ();
-        topLevel.Add (menu, wizard);
+        Window window = new ();
+        window.Add (menu, wizard);
 
-        Application.Run (topLevel);
-        topLevel.Dispose ();
+        Application.Run (window);
+        window.Dispose ();
         Application.Shutdown ();
     }
 }

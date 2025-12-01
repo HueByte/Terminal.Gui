@@ -110,7 +110,7 @@ public class ScenariosStressTests
             _output.WriteLine ($"Initialized == {a.Value}");
         }
 
-        void OnApplicationOnIteration (object? s, IterationEventArgs a)
+        void OnApplicationOnIteration (object? s, EventArgs<IApplication?> a)
         {
             iterationCount++;
 
@@ -140,7 +140,7 @@ public class ScenariosStressTests
                 }
             }
 
-            SubscribeAllSubViews (Application.TopRunnable!);
+            SubscribeAllSubViews (Application.TopRunnableView!);
         }
 
         // If the scenario doesn't close within the abort time, this will force it to quit
