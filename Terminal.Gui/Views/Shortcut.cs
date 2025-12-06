@@ -190,8 +190,32 @@ public class Shortcut : View, IOrientation, IDesignable
         SetRelativeLayout (SuperView?.GetContentSize () ?? screenSize);
     }
 
-    // TODO: Enable setting of the margin thickness
-    private Thickness GetMarginThickness () => new (1, 0, 1, 0);
+    private Thickness _marginThickness = new (1, 0, 1, 0);
+
+    /// <summary>
+    ///     Gets or sets the margin thickness applied to the CommandView, HelpView, and KeyView.
+    ///     The default is (1,0,1,0).
+    /// </summary>
+    public Thickness MarginThickness
+    {
+        get => _marginThickness;
+        set
+        {
+            _marginThickness = value;
+            if (CommandView.Margin is { })
+            {
+                CommandView.Margin!.Thickness = value;
+            }
+            if (HelpView.Margin is { })
+            {
+                HelpView.Margin!.Thickness = value;
+            }
+            if (KeyView.Margin is { })
+            {
+                KeyView.Margin!.Thickness = value;
+            }
+        }
+    }
 
     // When layout starts, we need to adjust the layout of the HelpView and KeyView
     /// <inheritdoc/>
@@ -212,7 +236,7 @@ public class Shortcut : View, IOrientation, IDesignable
 
         if (_maxHelpWidth < 3)
         {
-            Thickness t = GetMarginThickness ();
+            Thickness t = MarginThickness;
 
             switch (_maxHelpWidth)
             {
@@ -234,7 +258,7 @@ public class Shortcut : View, IOrientation, IDesignable
         else
         {
             // Reset to default
-            HelpView.Margin!.Thickness = GetMarginThickness ();
+            HelpView.Margin!.Thickness = MarginThickness;
         }
     }
 
@@ -484,7 +508,7 @@ public class Shortcut : View, IOrientation, IDesignable
     {
         if (CommandView.Margin is { })
         {
-            CommandView.Margin!.Thickness = GetMarginThickness ();
+            CommandView.Margin!.Thickness = MarginThickness;
 
             // strip off ViewportSettings.TransparentMouse
             CommandView.Margin!.ViewportSettings &= ~ViewportSettingsFlags.TransparentMouse;
@@ -550,7 +574,7 @@ public class Shortcut : View, IOrientation, IDesignable
     {
         if (HelpView.Margin is { })
         {
-            HelpView.Margin!.Thickness = GetMarginThickness ();
+            HelpView.Margin!.Thickness = MarginThickness;
 
             // strip off ViewportSettings.TransparentMouse
             HelpView.Margin!.ViewportSettings &= ~ViewportSettingsFlags.TransparentMouse;
@@ -687,7 +711,7 @@ public class Shortcut : View, IOrientation, IDesignable
     {
         if (KeyView.Margin is { })
         {
-            KeyView.Margin!.Thickness = GetMarginThickness ();
+            KeyView.Margin!.Thickness = MarginThickness;
 
             // strip off ViewportSettings.TransparentMouse
             KeyView.Margin!.ViewportSettings &= ~ViewportSettingsFlags.TransparentMouse;
