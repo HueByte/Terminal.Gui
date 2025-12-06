@@ -724,7 +724,7 @@ public class MenuBarTests ()
     public void OpenMenu_Opens_First_MenuBarItem ()
     {
         // Arrange
-        var top = new Toplevel ()
+        var top = new Runnable ()
         {
             App = ApplicationImpl.Instance
         };
@@ -767,7 +767,7 @@ public class MenuBarTests ()
     public void OpenMenu_Returns_False_When_No_MenuBarItem_With_PopoverMenu ()
     {
         // Arrange
-        var top = new Toplevel ()
+        var top = new Runnable ()
         {
             App = ApplicationImpl.Instance
         };
@@ -800,7 +800,7 @@ public class MenuBarTests ()
     public void OpenMenu_With_Position_Opens_At_Specified_Location ()
     {
         // Arrange
-        var top = new Toplevel ()
+        var top = new Runnable ()
         {
             App = ApplicationImpl.Instance
         };
