@@ -24,7 +24,10 @@ internal class TabRow : View
             Visible = false,
             Text = Glyphs.RightArrow.ToString ()
         };
-        _rightScrollIndicator.MouseClick += _host.Tab_MouseClick!;
+        _rightScrollIndicator.Activating += (s, e) =>
+        {
+            _host.Tab_Selecting (s, e);
+        };
 
         _leftScrollIndicator = new View
         {
@@ -34,12 +37,15 @@ internal class TabRow : View
             Visible = false,
             Text = Glyphs.LeftArrow.ToString ()
         };
-        _leftScrollIndicator.MouseClick += _host.Tab_MouseClick!;
+        _leftScrollIndicator.Activating += (s, e) =>
+        {
+            _host.Tab_Selecting (s, e);
+        };
 
         Add (_rightScrollIndicator, _leftScrollIndicator);
     }
 
-    protected override bool OnMouseEvent (MouseEventArgs me)
+    protected override bool OnMouseEvent (Mouse me)
     {
         View? parent = me.View is Adornment adornment ? adornment.Parent : me.View;
         Tab? hit = parent as Tab;

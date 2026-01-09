@@ -2,6 +2,7 @@
 
 using System.IO.Abstractions;
 using System.Text;
+using Terminal.Gui;
 
 namespace UICatalog.Scenarios;
 
@@ -60,7 +61,7 @@ public class TreeViewFileSystem : Scenario
         };
 
         win.Add (_detailsFrame);
-        _treeViewFiles.MouseClick += TreeViewFiles_MouseClick;
+        _treeViewFiles.Activating += TreeViewFiles_Selecting;
         _treeViewFiles.KeyDown += TreeViewFiles_KeyPress;
         _treeViewFiles.SelectionChanged += TreeViewFiles_SelectionChanged;
 
@@ -76,7 +77,7 @@ public class TreeViewFileSystem : Scenario
         _miMultiSelectCheckBox = new ()
         {
             Title = "_Multi Select",
-            CheckedState = CheckState.Checked
+            //CheckedState = CheckState.Checked
         };
         _miMultiSelectCheckBox.CheckedStateChanged += (s, e) => SetMultiSelect ();
 
@@ -145,8 +146,10 @@ public class TreeViewFileSystem : Scenario
 
         _miHighlightModelTextOnlyCheckBox = new ()
         {
-            Title = "_Highlight Model Text Only"
+            Title = "_Highlight Model Text Only",
+            CheckedState = CheckState.Checked
         };
+        SetCheckHighlightModelTextOnly ();
         _miHighlightModelTextOnlyCheckBox.CheckedStateChanged += (s, e) => SetCheckHighlightModelTextOnly ();
 
         _miCustomColorsCheckBox = new ()
@@ -157,8 +160,10 @@ public class TreeViewFileSystem : Scenario
 
         _miCursorCheckBox = new ()
         {
-            Title = "Curs_or (MultiSelect only)"
+            Title = "Curs_or",
+            //CheckedState = CheckState.Checked
         };
+        SetCursor ();
         _miCursorCheckBox.CheckedStateChanged += (s, e) => SetCursor ();
 
         menu.Add (
@@ -297,8 +302,15 @@ public class TreeViewFileSystem : Scenario
             return;
         }
 
-        _treeViewFiles.CursorVisibility =
-            _miCursorCheckBox.CheckedState == CheckState.Checked ? CursorVisibility.Default : CursorVisibility.Invisible;
+        if (_miCursorCheckBox.CheckedState == CheckState.Checked)
+        {
+            // Provide a non-null position to enable the cursor
+            _treeViewFiles.Cursor = _treeViewFiles.Cursor with { Position = Point.Empty, Style = CursorStyle.BlinkingBlock };
+        }
+        else
+        {
+            _treeViewFiles.Cursor = _treeViewFiles.Cursor with { Position = null };
+        }
     }
 
     private void SetCustomColors ()
@@ -556,17 +568,23 @@ public class TreeViewFileSystem : Scenario
         }
     }
 
-    private void TreeViewFiles_MouseClick (object? sender, MouseEventArgs obj)
+    private void TreeViewFiles_Selecting (object? sender, CommandEventArgs e)
     {
         if (_treeViewFiles is null)
         {
             return;
         }
 
-        // if user right clicks
-        if (obj.Flags.HasFlag (MouseFlags.Button3Clicked))
+        // Only handle mouse clicks
+        if (e.Context is not CommandContext<MouseBinding> { Binding.MouseEventArgs: { } mouse })
         {
-            IFileSystemInfo? rightClicked = _treeViewFiles.GetObjectOnRow (obj.Position.Y);
+            return;
+        }
+
+        // if user right clicks
+        if (mouse.Flags.HasFlag (MouseFlags.RightButtonClicked))
+        {
+            IFileSystemInfo? rightClicked = _treeViewFiles.GetObjectOnRow (mouse.Position!.Value.Y);
 
             // nothing was clicked
             if (rightClicked is null)
@@ -576,8 +594,8 @@ public class TreeViewFileSystem : Scenario
 
             ShowContextMenu (
                              new (
-                                  obj.Position.X + _treeViewFiles.Frame.X,
-                                  obj.Position.Y + _treeViewFiles.Frame.Y + 2
+                                  mouse.Position!.Value.X + _treeViewFiles.Frame.X,
+                                  mouse.Position!.Value.Y + _treeViewFiles.Frame.Y + 2
                                  ),
                              rightClicked
                             );

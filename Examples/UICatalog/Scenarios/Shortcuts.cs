@@ -13,12 +13,12 @@ public class Shortcuts : Scenario
     {
         Application.Init ();
         var quitKey = Application.QuitKey;
-        Window app = new ();
+        Window window = new ();
 
-        app.IsModalChanged += App_Loaded;
+        window.IsModalChanged += App_Loaded;
 
-        Application.Run (app);
-        app.Dispose ();
+        Application.Run (window);
+        window.Dispose ();
         Application.Shutdown ();
         Application.QuitKey = quitKey;
     }
@@ -66,7 +66,7 @@ public class Shortcuts : Scenario
             {
                 Text = "_Align Keys",
                 CanFocus = false,
-                HighlightStates = MouseState.None,
+                MouseHighlightStates = MouseState.None,
                 CheckedState = CheckState.Checked
             },
             Key = Key.F5.WithCtrl.WithAlt.WithShift
@@ -99,7 +99,7 @@ public class Shortcuts : Scenario
             {
                 Text = "Command _First",
                 CanFocus = false,
-                HighlightStates = MouseState.None
+                MouseHighlightStates = MouseState.None
             },
             Key = Key.F.WithCtrl
         };
@@ -186,7 +186,7 @@ public class Shortcuts : Scenario
             {
                 Title = "_Button",
                 ShadowStyle = ShadowStyle.None,
-                HighlightStates = MouseState.None
+                MouseHighlightStates = MouseState.None
             },
             Key = Key.K
         };
@@ -207,7 +207,7 @@ public class Shortcuts : Scenario
             {
                 Orientation = Orientation.Vertical,
                 Labels = ["O_ne", "T_wo", "Th_ree", "Fo_ur"],
-                HighlightStates = MouseState.None,
+                MouseHighlightStates = MouseState.None,
             },
         };
 
@@ -229,8 +229,8 @@ public class Shortcuts : Scenario
             X = 0,
             Y = Pos.Bottom (optionSelectorShortcut),
             Width = Dim.Fill ()! - Dim.Width (eventLog),
-            HelpText = "Sliders work!",
-            CommandView = new Slider<string>
+            HelpText = "LinearRanges work!",
+            CommandView = new LinearRange<string>
             {
                 Orientation = Orientation.Horizontal,
                 AllowEmpty = true
@@ -238,13 +238,13 @@ public class Shortcuts : Scenario
             Key = Key.F5
         };
 
-        ((Slider<string>)sliderShortcut.CommandView).Options = [new () { Legend = "A" }, new () { Legend = "B" }, new () { Legend = "C" }];
-        ((Slider<string>)sliderShortcut.CommandView).SetOption (0);
+        ((LinearRange<string>)sliderShortcut.CommandView).Options = [new () { Legend = "A" }, new () { Legend = "B" }, new () { Legend = "C" }];
+        ((LinearRange<string>)sliderShortcut.CommandView).SetOption (0);
 
-        ((Slider<string>)sliderShortcut.CommandView).OptionsChanged += (o, args) =>
+        ((LinearRange<string>)sliderShortcut.CommandView).OptionsChanged += (o, args) =>
                                                                        {
                                                                            eventSource.Add (
-                                                                                            $"OptionsChanged: {o?.GetType ().Name} - {string.Join (",", ((Slider<string>)o!)!.GetSetOptions ())}");
+                                                                                            $"OptionsChanged: {o?.GetType ().Name} - {string.Join (",", ((LinearRange<string>)o!)!.GetSetOptions ())}");
                                                                            eventLog.MoveDown ();
                                                                        };
 
@@ -425,7 +425,7 @@ public class Shortcuts : Scenario
             BoxWidth = 1
         };
 
-        bgColorShortcut.Selecting += (o, args) =>
+        bgColorShortcut.Activating += (o, args) =>
                                      {
                                          //args.Cancel = true;
                                      };
@@ -480,18 +480,18 @@ public class Shortcuts : Scenario
 
         foreach (Shortcut shortcut in Application.TopRunnableView.SubViews.OfType<Shortcut> ())
         {
-            shortcut.Selecting += (o, args) =>
+            shortcut.Activating += (o, args) =>
                                   {
                                       if (args.Handled)
                                       {
                                           return;
                                       }
 
-                                      eventSource.Add ($"{shortcut!.Id}.Selecting: {shortcut!.CommandView.Text} {shortcut!.CommandView.GetType ().Name}");
+                                      eventSource.Add ($"{shortcut!.Id}.Activating: {shortcut!.CommandView.Text} {shortcut!.CommandView.GetType ().Name}");
                                       eventLog.MoveDown ();
                                   };
 
-            shortcut.CommandView.Selecting += (o, args) =>
+            shortcut.CommandView.Activating += (o, args) =>
                                               {
                                                   if (args.Handled)
                                                   {
@@ -499,7 +499,7 @@ public class Shortcuts : Scenario
                                                   }
 
                                                   eventSource.Add (
-                                                                   $"{shortcut!.Id}.CommandView.Selecting: {shortcut!.CommandView.Text} {shortcut!.CommandView.GetType ().Name}");
+                                                                   $"{shortcut!.Id}.CommandView.Activating: {shortcut!.CommandView.Text} {shortcut!.CommandView.GetType ().Name}");
                                                   eventLog.MoveDown ();
                                                   //args.Handled = true;
                                               };
@@ -566,6 +566,6 @@ public class Shortcuts : Scenario
     {
         e.Handled = true;
         var view = sender as View;
-        MessageBox.Query ((sender as View)?.App, "Hi", $"You clicked {view?.Text}", "_Ok");
+        MessageBox.Query ((sender as View)?.App!, "Hi", $"You clicked {view?.Text}", "_Ok");
     }
 }

@@ -127,7 +127,7 @@ See the [Command Deep Dive](command.md).
 
 - [View.AddCommand](~/api/Terminal.Gui.ViewBase.View.yml) - Declares commands the View supports
 - [View.InvokeCommand](~/api/Terminal.Gui.ViewBase.View.yml) - Invokes a command
-- [Command](~/api/Terminal.Gui.Input.Command.yml) enum - Standard set of commands (Accept, Select, HotKey, etc.)
+- [Command](~/api/Terminal.Gui.Input.Command.yml) enum - Standard set of commands (Accept, Activate, HotKey, etc.)
 
 ### Input Handling
 
@@ -138,17 +138,17 @@ See the [Keyboard Deep Dive](keyboard.md).
 - [View.KeyBindings](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_KeyBindings) - Maps keys to Commands
 - [View.HotKey](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_HotKey) - The hot key for the View
 - [View.HotKeySpecifier](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_HotKeySpecifier) - Character used to denote hot keys in text (default: '_')
-- Events: `KeyDown`, `KeyUp`, `InvokingKeyBindings`
+- Events: `KeyDown`, `InvokingKeyBindings`
 
 #### Mouse
 
 See the [Mouse Deep Dive](mouse.md).
 
 - [View.MouseBindings](~/api/Terminal.Gui.ViewBase.View.yml) - Maps mouse events to Commands
-- [View.WantContinuousButtonPresses](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_WantContinuousButtonPresses) - Enables continuous button press events
+- [View.MouseHoldRepeat](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_MouseHoldRepeat) - Enables continuous button press events
 - [View.Highlight](~/api/Terminal.Gui.ViewBase.View.yml) - Event for visual feedback on mouse hover/click
 - [View.HighlightStyle](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_HighlightStyle) - Visual style when highlighted
-- Events: `MouseEnter`, `MouseLeave`, `MouseClick`, `MouseEvent`
+- Events: `MouseEnter`, `MouseLeave`, `MouseEvent`
 
 ### Layout and Arrangement
 
@@ -198,8 +198,12 @@ See the [Scheme Deep Dive](scheme.md) for details on color theming.
 - [View.Draw](~/api/Terminal.Gui.ViewBase.View.yml) - Main drawing method
 - [View.AddRune](~/api/Terminal.Gui.ViewBase.View.yml) - Draws a single Rune
 - [View.AddStr](~/api/Terminal.Gui.ViewBase.View.yml) - Draws a string
-- [View.Move](~/api/Terminal.Gui.ViewBase.View.yml) - Positions the cursor
+- [View.Move](~/api/Terminal.Gui.ViewBase.View.yml) - Positions the **Draw Cursor** (internal rendering position, NOT the visible Terminal Cursor)
 - [View.Clear](~/api/Terminal.Gui.ViewBase.View.yml) - Clears the View's content
+
+> [!WARNING]
+> `Move()` sets the **Draw Cursor** (where next character renders), NOT the **Terminal Cursor** (visible cursor indicator).
+> To position the Terminal Cursor, use the `View.Cursor` property. See [Cursor Management](cursor.md) for details.
 
 #### Drawing Events
 
@@ -228,8 +232,8 @@ Events:
 - `HasFocusChanged` - After focus changes
 - `Accepting` - When Command.Accept is invoked (typically Enter key)
 - `Accepted` - After Command.Accept completes
-- `Selecting` - When Command.Select is invoked (typically Space or mouse click)
-- `Selected` - After Command.Select completes
+- `Activating` - When Command.Activate is invoked (typically Space or mouse click)
+- `Activated` - After Command.Activate completes
 
 ### Scrolling
 
@@ -340,7 +344,7 @@ view.AddCommand (Command.Accept, () =>
 view.KeyBindings.Add (Key.Enter, Command.Accept);
 
 // Bind a mouse action to the command
-view.MouseBindings.Add (MouseFlags.Button1Clicked, Command.Select);
+view.MouseBindings.Add (MouseFlags.LeftButtonClicked, Command.Activate);
 ```
 
 ### Input
@@ -355,7 +359,6 @@ The keyboard subsystem processes key presses through:
 2. [View.OnKeyDown](~/api/Terminal.Gui.ViewBase.View.yml) virtual method
 3. [View.KeyBindings](~/api/Terminal.Gui.ViewBase.View.yml#Terminal_Gui_ViewBase_View_KeyBindings) - Converts keys to commands
 4. Command handlers (registered via [View.AddCommand](~/api/Terminal.Gui.ViewBase.View.yml))
-5. [View.KeyUp](~/api/Terminal.Gui.ViewBase.View.yml) event
 
 #### Mouse
 
@@ -368,7 +371,6 @@ The mouse subsystem processes mouse events through:
 3. [View.MouseEnter](~/api/Terminal.Gui.ViewBase.View.yml) / [View.MouseLeave](~/api/Terminal.Gui.ViewBase.View.yml) events
 4. [View.MouseBindings](~/api/Terminal.Gui.ViewBase.View.yml) - Converts mouse actions to commands
 5. Command handlers
-6. [View.MouseClick](~/api/Terminal.Gui.ViewBase.View.yml) event (high-level)
 
 ### Layout
 
@@ -503,10 +505,10 @@ var container = new View
     Height = Dim.Fill()
 };
 
-var button1 = new Button { Text = "OK", X = 2, Y = 2 };
-var button2 = new Button { Text = "Cancel", X = Pos.Right(button1) + 2, Y = 2 };
+var LeftButton = new Button { Text = "OK", X = 2, Y = 2 };
+var MiddleButton = new Button { Text = "Cancel", X = Pos.Right(LeftButton) + 2, Y = 2 };
 
-container.Add(button1, button2);
+container.Add(LeftButton, MiddleButton);
 ```
 
 ### Using Adornments
@@ -611,7 +613,7 @@ Color? result = Application.Create()
 
 if (result is { })
 {
-    Console.WriteLine($"Selected: {result}");
+    Console.WriteLine($"Activated: {result}");
 }
 ```
 

@@ -14,7 +14,7 @@ public class CheckBox : View
     ///     Gets or sets the default Highlight Style.
     /// </summary>
     [ConfigurationProperty (Scope = typeof (ThemeScope))]
-    public static MouseState DefaultHighlightStates
+    public static MouseState DefaultMouseHighlightStates
     {
         get => _defaultHighlightStates;
         set => _defaultHighlightStates = value;
@@ -33,23 +33,24 @@ public class CheckBox : View
         // Activate (Space key and single-click) - Raise Activate event and Advance
         // - DO NOT raise Accept
         // - DO NOT SetFocus
-        AddCommand (Command.Select, ActivateAndAdvance);
+        AddCommand (Command.Activate, ActivateAndAdvance);
 
         // Accept (Enter key and double-click) - Raise Accept event
         // - DO NOT advance state
         // The default Accept handler does that.
-        MouseBindings.Add (MouseFlags.Button1DoubleClicked, Command.Accept);
+        MouseBindings.Add (MouseFlags.LeftButtonDoubleClicked, Command.Accept);
+        MouseBindings.Remove (MouseFlags.LeftButtonClicked);
 
         TitleChanged += Checkbox_TitleChanged;
 
-        HighlightStates = DefaultHighlightStates;
+        MouseHighlightStates = DefaultMouseHighlightStates;
     }
 
     /// <inheritdoc />
     protected override bool OnHandlingHotKey (CommandEventArgs args)
     {
         // Invoke Activate on ourselves
-        if (InvokeCommand (Command.Select, args.Context) is true)
+        if (InvokeCommand (Command.Activate, args.Context) is true)
         {
             // Default behavior for View is to set Focus on hotkey. We need to return
             // true here to indicate Activate was handled. That will prevent the default
@@ -62,7 +63,7 @@ public class CheckBox : View
 
     private bool? ActivateAndAdvance (ICommandContext? commandContext)
     {
-        if (RaiseSelecting (commandContext) is true)
+        if (RaiseActivating (commandContext) is true)
         {
             return true;
         }

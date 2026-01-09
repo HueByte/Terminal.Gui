@@ -2197,7 +2197,7 @@ public class TableViewTests (ITestOutputHelper output)
 
         // Clicking in bottom row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 4), Flags = MouseFlags.Button1Clicked }
+                          new () { Position = new (1, 4), Flags = MouseFlags.LeftButtonClicked }
                          );
 
         // should select that row
@@ -2205,7 +2205,7 @@ public class TableViewTests (ITestOutputHelper output)
 
         // shift clicking top row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 2), Flags = MouseFlags.Button1Clicked | MouseFlags.ButtonCtrl }
+                          new () { Position = new (1, 2), Flags = MouseFlags.LeftButtonClicked | MouseFlags.Ctrl }
                          );
 
         // should extend the selection
@@ -2273,7 +2273,7 @@ public class TableViewTests (ITestOutputHelper output)
 
         // Clicking in bottom row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 4), Flags = MouseFlags.Button1Clicked }
+                          new () { Position = new (1, 4), Flags = MouseFlags.LeftButtonClicked }
                          );
 
         // should select that row
@@ -2328,7 +2328,7 @@ public class TableViewTests (ITestOutputHelper output)
 
         // Clicking in bottom row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 4), Flags = MouseFlags.Button1Clicked }
+                          new () { Position = new (1, 4), Flags = MouseFlags.LeftButtonClicked }
                          );
 
         // should select that row
@@ -2381,7 +2381,7 @@ A B C
 
         // Clicking in bottom row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 4), Flags = MouseFlags.Button1Clicked }
+                          new () { Position = new (1, 4), Flags = MouseFlags.LeftButtonClicked }
                          );
 
         // should select that row
@@ -2565,7 +2565,7 @@ A B C
 
         // Clicking in bottom row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 3), Flags = MouseFlags.Button1Clicked }
+                          new () { Position = new (1, 3), Flags = MouseFlags.LeftButtonClicked }
                          );
 
         // should select that row
@@ -2573,7 +2573,7 @@ A B C
 
         // shift clicking top row
         tv.NewMouseEvent (
-                          new () { Position = new (1, 2), Flags = MouseFlags.Button1Clicked | MouseFlags.ButtonShift }
+                          new () { Position = new (1, 2), Flags = MouseFlags.LeftButtonClicked | MouseFlags.Shift }
                          );
 
         // should extend the selection
@@ -3048,7 +3048,7 @@ A B C
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
 
         tableView.MultiSelect = true;
-        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Select);
+        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Activate);
 
         Point selectedCell = tableView.GetAllSelectedCells ().Single ();
         Assert.Equal (0, selectedCell.X);
@@ -3120,7 +3120,7 @@ A B C
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
         tableView.FullRowSelect = true;
         tableView.MultiSelect = true;
-        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Select);
+        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Activate);
 
         // Toggle Select Cell 0,0
         tableView.NewKeyDownEvent (new () { KeyCode = KeyCode.Space });
@@ -3160,7 +3160,7 @@ A B C
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
         tableView.MultiSelect = true;
-        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Select);
+        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Activate);
 
         // Make a square selection
         tableView.NewKeyDownEvent (new () { KeyCode = KeyCode.ShiftMask | KeyCode.CursorDown });
@@ -3201,7 +3201,7 @@ A B C
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
         dt.Rows.Add (1, 2, 3, 4, 5, 6);
         tableView.MultiSelect = true;
-        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Select);
+        tableView.KeyBindings.ReplaceCommands (Key.Space, Command.Activate);
 
         // Make first square selection (0,0 to 1,1)
         tableView.NewKeyDownEvent (new () { KeyCode = KeyCode.ShiftMask | KeyCode.CursorDown });
