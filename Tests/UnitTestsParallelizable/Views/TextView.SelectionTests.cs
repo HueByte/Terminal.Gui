@@ -199,7 +199,7 @@ public class TextViewSelectionTests
         app.Keyboard.RaiseKeyDownEvent (Key.End.WithCtrl);
         app.Keyboard.RaiseKeyDownEvent (Key.PageUp);
         app.Keyboard.RaiseKeyDownEvent (Key.PageDown);
-        
+
         // After this sequence, cursor is at end of document minus the length of the previous line
         // Line 2 is "This is the second line." which is 24 chars, so position is (24, 2)
         Assert.Equal (new (24, 2), tv.InsertionPoint);
