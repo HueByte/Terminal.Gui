@@ -133,8 +133,42 @@ public abstract class PopoverBaseImpl : View, IPopover
             {
                 App?.Navigation?.SetFocused (App?.TopRunnableView?.MostFocused);
             }
+
+            App?.TopRunnableView?.SetNeedsDraw ();
         }
 
         return ret;
     }
+
+    ///// <summary>
+    /////     Locates the popover menu at <paramref name="idealScreenPosition"/>. The actual position of the menu will be
+    /////     adjusted to
+    /////     ensure the menu fully fits on the screen, and the mouse cursor is over the first cell of the
+    /////     first MenuItem (if possible).
+    ///// </summary>
+    ///// <param name="idealScreenPosition">If <see langword="null"/>, the current mouse position will be used.</param>
+    //public void SetPosition (Point? idealScreenPosition = null)
+    //{
+    //    idealScreenPosition ??= App?.Mouse.LastMousePosition;
+
+    //    if (idealScreenPosition is null)
+    //    {
+    //        return;
+    //    }
+
+    //    Point pos = idealScreenPosition.Value;
+
+    //    if (!Root.IsInitialized)
+    //    {
+    //        Root.App ??= App;
+    //        Root.BeginInit ();
+    //        Root.EndInit ();
+    //        Root.Layout ();
+    //    }
+
+    //    pos = GetMostVisibleLocationForSubMenu (Root, pos);
+
+    //    Root.X = pos.X;
+    //    Root.Y = pos.Y;
+    //}
 }
