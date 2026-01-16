@@ -180,7 +180,7 @@ button4.Accepting += (s, e) =>
         BorderStyle = LineStyle.Single
     };
 
-    colorPicker.Selecting += (sender, args) =>
+    colorPicker.Activating += (sender, args) =>
     {
         ColorPicker? picker = sender as ColorPicker;
 

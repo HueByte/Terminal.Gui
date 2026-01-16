@@ -134,6 +134,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PromptExample", "Examples\P
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OutputView", "docfx\scripts\OutputView\OutputView.csproj", "{566AFB59-FF8C-FFF4-C1F4-049B6246E4A7}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PopoverWrapperExample", "Examples\PopoverWrapperExample\PopoverWrapperExample.csproj", "{4DFA7371-86D5-B970-9535-368FE1393D90}"
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Examples", "Examples", "{3DD033C0-E023-47BF-A808-9CCE30873C3E}"
 	ProjectSection(SolutionItems) = preProject
 		Examples\PowershellExample.ps1 = Examples\PowershellExample.ps1
@@ -229,6 +230,10 @@ Global
 		{566AFB59-FF8C-FFF4-C1F4-049B6246E4A7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{566AFB59-FF8C-FFF4-C1F4-049B6246E4A7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{566AFB59-FF8C-FFF4-C1F4-049B6246E4A7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4DFA7371-86D5-B970-9535-368FE1393D90}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4DFA7371-86D5-B970-9535-368FE1393D90}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4DFA7371-86D5-B970-9535-368FE1393D90}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4DFA7371-86D5-B970-9535-368FE1393D90}.Release|Any CPU.Build.0 = Release|Any CPU
 		{DB0337E6-BBC0-4ECB-9F18-F7310705BDAF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DB0337E6-BBC0-4ECB-9F18-F7310705BDAF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DB0337E6-BBC0-4ECB-9F18-F7310705BDAF}.Release|Any CPU.ActiveCfg = Release|Any CPU

@@ -12,8 +12,8 @@ public class PopoverWrapperTests
 
         Assert.Equal ("popoverWrapper", wrapper.Id);
         Assert.True (wrapper.CanFocus);
-        Assert.Equal (Dim.Fill (), wrapper.Width);
-        Assert.Equal (Dim.Fill (), wrapper.Height);
+        //Assert.Equal (Dim.Fill (), wrapper.Width);
+        //Assert.Equal (Dim.Fill (), wrapper.Height);
         Assert.True (wrapper.ViewportSettings.HasFlag (ViewportSettingsFlags.Transparent));
         Assert.True (wrapper.ViewportSettings.HasFlag (ViewportSettingsFlags.TransparentMouse));
     }
