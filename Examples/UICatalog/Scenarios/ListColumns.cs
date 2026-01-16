@@ -13,22 +13,23 @@ namespace UICatalog.Scenarios;
 [ScenarioCategory ("Scrolling")]
 public class ListColumns : Scenario
 {
+    private IApplication? _app;
     private Scheme? _alternatingScheme;
     private DataTable? _currentTable;
     private TableView? _listColView;
     private CheckBox? _alternatingColorsCheckBox;
     private CheckBox? _alwaysUseNormalColorForVerticalCellLinesCheckBox;
-    private CheckBox? _bottomlineCheckBox;
+    private CheckBox? _bottomLineCheckBox;
     private CheckBox? _cellLinesCheckBox;
     private CheckBox? _cursorCheckBox;
     private CheckBox? _expandLastColumnCheckBox;
     private CheckBox? _orientVerticalCheckBox;
     private CheckBox? _scrollParallelCheckBox;
     private CheckBox? _smoothScrollingCheckBox;
-    private CheckBox? _toplineCheckBox;
+    private CheckBox? _topLineCheckBox;
 
     /// <summary>
-    ///     Builds a simple list in which values are the index.  This helps testing that scrolling etc is working
+    ///     Builds a simple list in which values are the index. This helps test that scrolling etc. is working
     ///     correctly and not skipping out values when paging
     /// </summary>
     /// <param name="items"></param>
@@ -47,9 +48,12 @@ public class ListColumns : Scenario
 
     public override void Main ()
     {
-        Application.Init ();
+        ConfigurationManager.Enable (ConfigLocations.All);
+        using IApplication app = Application.Create ();
+        app.Init ();
+        _app = app;
 
-        Window appWindow = new ()
+        using Window appWindow = new ()
         {
             Title = GetQuitKeyAndName (),
             BorderStyle = LineStyle.None
@@ -60,7 +64,7 @@ public class ListColumns : Scenario
 
         _listColView = new ()
         {
-            Y = Pos.Bottom(menuBar),
+            Y = Pos.Bottom (menuBar),
             Width = Dim.Fill (),
             Height = Dim.Fill (1),
             Style = new ()
@@ -97,7 +101,7 @@ public class ListColumns : Scenario
 
         _listColView.SelectedCellChanged += (s, e) =>
                                             {
-                                                if (_listColView is { })
+                                                if (_listColView is not null)
                                                 {
                                                     selectedCellLabel.Text = $"{_listColView.SelectedRow},{_listColView.SelectedColumn}";
                                                 }
@@ -112,25 +116,22 @@ public class ListColumns : Scenario
             Normal = new (Color.White, Color.BrightBlue)
         };
 
-        // if user clicks the mouse in TableView
-        _listColView.MouseClick += (s, e) => { _listColView.ScreenToCell (e.Position, out int? clickedCol); };
-
         _listColView.KeyBindings.ReplaceCommands (Key.Space, Command.Accept);
 
         // Setup menu checkboxes
-        _toplineCheckBox = new ()
+        _topLineCheckBox = new ()
         {
             Title = "_TopLine",
             CheckedState = _listColView.Style.ShowHorizontalHeaderOverline ? CheckState.Checked : CheckState.UnChecked
         };
-        _toplineCheckBox.CheckedStateChanged += (s, e) => ToggleTopline ();
+        _topLineCheckBox.CheckedStateChanged += (s, e) => ToggleTopline ();
 
-        _bottomlineCheckBox = new ()
+        _bottomLineCheckBox = new ()
         {
             Title = "_BottomLine",
             CheckedState = _listColView.Style.ShowHorizontalBottomline ? CheckState.Checked : CheckState.UnChecked
         };
-        _bottomlineCheckBox.CheckedStateChanged += (s, e) => ToggleBottomline ();
+        _bottomLineCheckBox.CheckedStateChanged += (s, e) => ToggleBottomline ();
 
         _cellLinesCheckBox = new ()
         {
@@ -189,7 +190,7 @@ public class ListColumns : Scenario
 
         menuBar.Add (
                   new MenuBarItem (
-                                   "_File",
+                                   Strings.menuFile,
                                    [
                                        new MenuItem
                                        {
@@ -208,7 +209,7 @@ public class ListColumns : Scenario
                                        },
                                        new MenuItem
                                        {
-                                           Title = "_Quit",
+                                           Title = Strings.cmdQuit,
                                            Action = Quit
                                        }
                                    ]
@@ -221,11 +222,11 @@ public class ListColumns : Scenario
                                    [
                                        new MenuItem
                                        {
-                                           CommandView = _toplineCheckBox
+                                           CommandView = _topLineCheckBox
                                        },
                                        new MenuItem
                                        {
-                                           CommandView = _bottomlineCheckBox
+                                           CommandView = _bottomLineCheckBox
                                        },
                                        new MenuItem
                                        {
@@ -284,14 +285,12 @@ public class ListColumns : Scenario
         // Add views in order of visual appearance
         appWindow.Add (menuBar, _listColView, selectedCellLabel, statusBar);
 
-        Application.Run (appWindow);
-        appWindow.Dispose ();
-        Application.Shutdown ();
+        app.Run (appWindow);
     }
 
     private void CloseExample ()
     {
-        if (_listColView is { })
+        if (_listColView is not null)
         {
             _listColView.Table = null;
         }
@@ -299,7 +298,7 @@ public class ListColumns : Scenario
 
     private void OpenSimpleList (bool big) { SetTable (BuildSimpleList (big ? 1023 : 31)); }
 
-    private void Quit () { Application.RequestStop (); }
+    private void Quit () { _listColView?.App?.RequestStop (); }
 
     private void RunListWidthDialog (string prompt, Action<TableView, int> setter, Func<TableView, int> getter)
     {
@@ -309,23 +308,19 @@ public class ListColumns : Scenario
         }
 
         var accepted = false;
-        Button ok = new () { Text = "Ok", IsDefault = true };
+        Dialog d = new Dialog
+        {
+            Title = prompt,
+            Buttons = [new () { Title = Strings.btnCancel }, new () { Title = Strings.btnOk }]
+        };
 
-        ok.Accepting += (s, e) =>
-                        {
-                            accepted = true;
-                            Application.RequestStop ();
-                        };
-        Button cancel = new () { Text = "Cancel" };
-        cancel.Accepting += (s, e) => { Application.RequestStop (); };
-        Dialog d = new () { Title = prompt, Buttons = [ok, cancel] };
-
-        TextField tf = new () { Text = getter (_listColView).ToString (), X = 0, Y = 0, Width = Dim.Fill () };
+        TextField tf = new () { Text = getter (_listColView).ToString (), X = 0, Y = 0, Width = Dim.Fill (0, minimumContentDim: 50) };
 
         d.Add (tf);
         tf.SetFocus ();
 
-        Application.Run (d);
+        _app?.Run (d);
+        accepted = d.Result == 1;
         d.Dispose ();
 
         if (accepted)
@@ -336,7 +331,7 @@ public class ListColumns : Scenario
             }
             catch (Exception ex)
             {
-                MessageBox.ErrorQuery (Application.Instance, 60, 20, "Failed to set", ex.Message, "Ok");
+                MessageBox.ErrorQuery (_app!, "Failed to set", ex.Message, "Ok");
             }
         }
     }
@@ -422,12 +417,12 @@ public class ListColumns : Scenario
 
     private void ToggleBottomline ()
     {
-        if (_listColView is null || _bottomlineCheckBox is null)
+        if (_listColView is null || _bottomLineCheckBox is null)
         {
             return;
         }
 
-        _listColView.Style.ShowHorizontalBottomline = _bottomlineCheckBox.CheckedState == CheckState.Checked;
+        _listColView.Style.ShowHorizontalBottomline = _bottomLineCheckBox.CheckedState == CheckState.Checked;
         _listColView.Update ();
     }
 
@@ -490,12 +485,12 @@ public class ListColumns : Scenario
 
     private void ToggleTopline ()
     {
-        if (_listColView is null || _toplineCheckBox is null)
+        if (_listColView is null || _topLineCheckBox is null)
         {
             return;
         }
 
-        _listColView.Style.ShowHorizontalHeaderOverline = _toplineCheckBox.CheckedState == CheckState.Checked;
+        _listColView.Style.ShowHorizontalHeaderOverline = _topLineCheckBox.CheckedState == CheckState.Checked;
         _listColView.Update ();
     }
 

@@ -22,7 +22,7 @@ public class CheckBoxTests ()
         ckb.CheckedStateChanging += (s, e) => checkedStateChangingCount++;
 
         var selectCount = 0;
-        ckb.Selecting += (s, e) => selectCount++;
+        ckb.Activating += (s, e) => selectCount++;
 
         var acceptCount = 0;
         ckb.Accepting += (s, e) => acceptCount++;
@@ -229,7 +229,7 @@ public class CheckBoxTests ()
         Assert.Equal (CheckState.Checked, checkBox.CheckedState);
 
         // Select with mouse
-        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.Button1Clicked }));
+        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.LeftButtonPressed }));
         Assert.Equal (CheckState.UnChecked, checkBox.CheckedState);
 
         checkBox.AllowCheckStateNone = true;
@@ -241,7 +241,7 @@ public class CheckBoxTests ()
     }
 
     [Fact]
-    public void Mouse_Click_Selects ()
+    public void LeftButtonPressed_Selects ()
     {
         var checkBox = new CheckBox { Text = "_Checkbox" };
         Assert.True (checkBox.CanFocus);
@@ -250,7 +250,7 @@ public class CheckBoxTests ()
         checkBox.CheckedStateChanging += (s, e) => checkedStateChangingCount++;
 
         var selectCount = 0;
-        checkBox.Selecting += (s, e) => selectCount++;
+        checkBox.Activating += (s, e) => selectCount++;
 
         var acceptCount = 0;
         checkBox.Accepting += (s, e) => acceptCount++;
@@ -262,20 +262,20 @@ public class CheckBoxTests ()
         Assert.Equal (0, selectCount);
         Assert.Equal (0, acceptCount);
 
-        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.Button1Clicked }));
+        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.LeftButtonPressed }));
         Assert.Equal (CheckState.Checked, checkBox.CheckedState);
         Assert.Equal (1, checkedStateChangingCount);
         Assert.Equal (1, selectCount);
         Assert.Equal (0, acceptCount);
 
-        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.Button1Clicked }));
+        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.LeftButtonPressed }));
         Assert.Equal (CheckState.UnChecked, checkBox.CheckedState);
         Assert.Equal (2, checkedStateChangingCount);
         Assert.Equal (2, selectCount);
         Assert.Equal (0, acceptCount);
 
         checkBox.AllowCheckStateNone = true;
-        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.Button1Clicked }));
+        Assert.True (checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.LeftButtonPressed }));
         Assert.Equal (CheckState.None, checkBox.CheckedState);
         Assert.Equal (3, checkedStateChangingCount);
         Assert.Equal (3, selectCount);
@@ -292,7 +292,7 @@ public class CheckBoxTests ()
         checkBox.CheckedStateChanging += (s, e) => checkedStateChangingCount++;
 
         var selectCount = 0;
-        checkBox.Selecting += (s, e) => selectCount++;
+        checkBox.Activating += (s, e) => selectCount++;
 
         var acceptCount = 0;
 
@@ -309,7 +309,7 @@ public class CheckBoxTests ()
         Assert.Equal (0, selectCount);
         Assert.Equal (0, acceptCount);
 
-        checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.Button1DoubleClicked });
+        checkBox.NewMouseEvent (new () { Position = new (0, 0), Flags = MouseFlags.LeftButtonDoubleClicked });
 
         Assert.Equal (CheckState.UnChecked, checkBox.CheckedState);
         Assert.Equal (0, checkedStateChangingCount);

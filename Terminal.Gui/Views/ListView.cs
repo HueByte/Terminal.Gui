@@ -1,4 +1,3 @@
-#nullable enable
 using System.Collections;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -44,11 +43,6 @@ namespace Terminal.Gui.Views;
 /// </remarks>
 public class ListView : View, IDesignable
 {
-    // TODO: ListView has been upgraded to use Viewport and ContentSize instead of the
-    // TODO: bespoke _top and _left. It was a quick & dirty port. There is now duplicate logic
-    // TODO: that could be removed. 
-    //private int _top, _left;
-
     /// <summary>
     ///     Initializes a new instance of <see cref="ListView"/>. Set the <see cref="Source"/> property to display
     ///     something.
@@ -59,10 +53,10 @@ public class ListView : View, IDesignable
 
         // Things this view knows how to do
         // 
-        AddCommand (Command.Up, ctx => RaiseSelecting (ctx) == true || MoveUp ());
-        AddCommand (Command.Down, ctx => RaiseSelecting (ctx) == true || MoveDown ());
+        AddCommand (Command.Up, ctx => RaiseActivating (ctx) == true || MoveUp ());
+        AddCommand (Command.Down, ctx => RaiseActivating (ctx) == true || MoveDown ());
 
-        // TODO: add RaiseSelecting to all of these
+        // TODO: add RaiseActivating to all of these
         AddCommand (Command.ScrollUp, () => ScrollVertical (-1));
         AddCommand (Command.ScrollDown, () => ScrollVertical (1));
         AddCommand (Command.PageUp, () => MovePageUp ());
@@ -85,25 +79,31 @@ public class ListView : View, IDesignable
                         return OnOpenSelectedItem ();
                     });
 
-        // Select (Space key and single-click) - If markable, change mark and raise Select event
+        // Activate (Space key and single-click) - If AllowsMarking, change mark and raise Activate event
         AddCommand (
-                    Command.Select,
+                    Command.Activate,
                     ctx =>
                     {
-                        if (!_allowsMarking)
-                        {
-                            return false;
-                        }
-
-                        if (RaiseSelecting (ctx) == true)
+                        if (RaiseActivating (ctx) == true)
                         {
                             return true;
+                        }
+
+                        if (!HasFocus && CanFocus)
+                        {
+                            SetFocus ();
+                        }
+
+                        if (ctx is CommandContext<MouseBinding> { Binding.MouseEventArgs: { } } mouseCommandContext)
+                        {
+                            Point position = mouseCommandContext.Binding.MouseEventArgs.Position!.Value;
+                            SelectedItem = position.Y;
                         }
 
                         return MarkUnmarkSelectedItem ();
                     });
 
-        // Hotkey - If none set, select and raise Select event. SetFocus. - DO NOT raise Accept
+        // Hotkey - If none set, activate and raise Activate event. SetFocus. - DO NOT raise Accept
         AddCommand (
                     Command.HotKey,
                     ctx =>
@@ -115,7 +115,7 @@ public class ListView : View, IDesignable
 
                         SelectedItem = 0;
 
-                        if (RaiseSelecting (ctx) == true)
+                        if (RaiseActivating (ctx) == true)
                         {
                             return true;
                         }
@@ -151,26 +151,19 @@ public class ListView : View, IDesignable
 
         KeyBindings.Add (Key.End, Command.End);
 
-        // Key.Space is already bound to Command.Select; this gives us select then move down
-        KeyBindings.Add (Key.Space.WithShift, Command.Select, Command.Down);
+        // Key.Space is already bound to Command.Activate; this gives us activate then move down
+        KeyBindings.Add (Key.Space.WithShift, Command.Activate, Command.Down);
 
         // Use the form of Add that lets us pass context to the handler
         KeyBindings.Add (Key.A.WithCtrl, new KeyBinding ([Command.SelectAll], true));
         KeyBindings.Add (Key.U.WithCtrl, new KeyBinding ([Command.SelectAll], false));
-    }
 
-    private bool _allowsMarking;
-    private bool _allowsMultipleSelection;
-
-    private IListDataSource? _source;
-
-    /// <inheritdoc/>
-    public bool EnableForDesign ()
-    {
-        ListWrapper<string> source = new (["List Item 1", "List Item two", "List Item Quattro", "Last List Item"]);
-        Source = source;
-
-        return true;
+        MouseBindings.ReplaceCommands (MouseFlags.LeftButtonPressed, Command.Activate);
+        MouseBindings.ReplaceCommands (MouseFlags.LeftButtonDoubleClicked, Command.Accept);
+        MouseBindings.ReplaceCommands (MouseFlags.WheeledDown, Command.ScrollDown);
+        MouseBindings.ReplaceCommands (MouseFlags.WheeledUp, Command.ScrollUp);
+        MouseBindings.ReplaceCommands (MouseFlags.WheeledRight, Command.ScrollRight);
+        MouseBindings.ReplaceCommands (MouseFlags.WheeledLeft, Command.ScrollLeft);
     }
 
     /// <summary>Gets or sets whether this <see cref="ListView"/> allows items to be marked.</summary>
@@ -181,10 +174,10 @@ public class ListView : View, IDesignable
     /// </remarks>
     public bool AllowsMarking
     {
-        get => _allowsMarking;
+        get;
         set
         {
-            _allowsMarking = value;
+            field = value;
             SetNeedsDraw ();
         }
     }
@@ -195,12 +188,12 @@ public class ListView : View, IDesignable
     /// </summary>
     public bool AllowsMultipleSelection
     {
-        get => _allowsMultipleSelection;
+        get;
         set
         {
-            _allowsMultipleSelection = value;
+            field = value;
 
-            if (Source is { } && !_allowsMultipleSelection)
+            if (Source is { } && !field)
             {
                 // Clear all selections except selected
                 for (var i = 0; i < Source.Count; i++)
@@ -275,29 +268,26 @@ public class ListView : View, IDesignable
     /// <returns><see langword="true"/> if marking was successful.</returns>
     public bool MarkAll (bool mark)
     {
-        if (!_allowsMarking)
+        if (!AllowsMarking || !AllowsMultipleSelection)
         {
             return false;
         }
 
-        if (AllowsMultipleSelection)
+        for (var i = 0; i < Source?.Count; i++)
         {
-            for (var i = 0; i < Source?.Count; i++)
-            {
-                Source.SetMark (i, mark);
-            }
-
-            return true;
+            Source.SetMark (i, mark);
         }
 
-        return false;
+        SetNeedsDraw ();
+
+        return true;
     }
 
     /// <summary>Marks the <see cref="SelectedItem"/> if it is not already marked.</summary>
     /// <returns><see langword="true"/> if the <see cref="SelectedItem"/> was marked.</returns>
     public bool MarkUnmarkSelectedItem ()
     {
-        if (Source is null || SelectedItem is null || !UnmarkAllButSelected ())
+        if (!AllowsMarking || Source is null || SelectedItem is null || !UnmarkAllButSelected ())
         {
             return false;
         }
@@ -305,7 +295,7 @@ public class ListView : View, IDesignable
         Source.SetMark (SelectedItem.Value, !Source.IsMarked (SelectedItem.Value));
         SetNeedsDraw ();
 
-        return Source.IsMarked (SelectedItem.Value);
+        return true;
     }
 
     /// <summary>Gets the widest item in the list.</summary>
@@ -313,12 +303,14 @@ public class ListView : View, IDesignable
 
     /// <summary>Changes the <see cref="SelectedItem"/> to the next item in the list, scrolling the list if needed.</summary>
     /// <returns></returns>
-    public virtual bool MoveDown ()
+    public bool MoveDown ()
     {
         if (Source is null || Source.Count == 0)
         {
             return false; //Nothing for us to move to
         }
+
+        var moved = false;
 
         if (SelectedItem is null || SelectedItem >= Source.Count)
         {
@@ -326,6 +318,7 @@ public class ListView : View, IDesignable
             // valid values range, we should select the first or bottommost valid value.
             // This can occur if the backing data source changes.
             SelectedItem = SelectedItem is null ? 0 : Source.Count - 1;
+            moved = true;
         }
         else if (SelectedItem + 1 < Source.Count)
         {
@@ -340,32 +333,37 @@ public class ListView : View, IDesignable
             {
                 Viewport = Viewport with { Y = SelectedItem.Value };
             }
+
+            moved = true;
         }
         else if (SelectedItem >= Viewport.Y + Viewport.Height)
         {
             Viewport = Viewport with { Y = Source.Count - Viewport.Height };
+            moved = true;
         }
 
-        return true;
+        return moved;
     }
 
     /// <summary>Changes the <see cref="SelectedItem"/> to last item in the list, scrolling the list if needed.</summary>
     /// <returns></returns>
-    public virtual bool MoveEnd ()
+    public bool MoveEnd ()
     {
-        if (Source is { Count: > 0 } && SelectedItem != Source.Count - 1)
+        if (Source is not { Count: > 0 } || SelectedItem == Source.Count - 1)
         {
-            SelectedItem = Source.Count - 1;
+            return true;
+        }
 
-            if (Viewport.Y + SelectedItem > Viewport.Height - 1)
+        SelectedItem = Source.Count - 1;
+
+        if (Viewport.Y + SelectedItem > Viewport.Height - 1)
+        {
+            Viewport = Viewport with
             {
-                Viewport = Viewport with
-                {
-                    Y = SelectedItem < Viewport.Height - 1
-                            ? Math.Max (Viewport.Height - SelectedItem.Value + 1, 0)
-                            : Math.Max (SelectedItem.Value - Viewport.Height + 1, 0)
-                };
-            }
+                Y = SelectedItem < Viewport.Height - 1
+                        ? Math.Max (Viewport.Height - SelectedItem.Value + 1, 0)
+                        : Math.Max (SelectedItem.Value - Viewport.Height + 1, 0)
+            };
         }
 
         return true;
@@ -373,13 +371,15 @@ public class ListView : View, IDesignable
 
     /// <summary>Changes the <see cref="SelectedItem"/> to the first item in the list, scrolling the list if needed.</summary>
     /// <returns></returns>
-    public virtual bool MoveHome ()
+    public bool MoveHome ()
     {
-        if (SelectedItem != 0)
+        if (SelectedItem == 0)
         {
-            SelectedItem = 0;
-            Viewport = Viewport with { Y = SelectedItem.Value };
+            return true;
         }
+
+        SelectedItem = 0;
+        Viewport = Viewport with { Y = SelectedItem.Value };
 
         return true;
     }
@@ -389,7 +389,7 @@ public class ListView : View, IDesignable
     ///     needed.
     /// </summary>
     /// <returns></returns>
-    public virtual bool MovePageDown ()
+    public bool MovePageDown ()
     {
         if (Source is null || Source.Count == 0)
         {
@@ -403,18 +403,20 @@ public class ListView : View, IDesignable
             n = Source.Count - 1;
         }
 
-        if (n != SelectedItem)
+        if (n == SelectedItem)
         {
-            SelectedItem = n;
+            return true;
+        }
 
-            if (Source.Count >= Viewport.Height)
-            {
-                Viewport = Viewport with { Y = SelectedItem.Value };
-            }
-            else
-            {
-                Viewport = Viewport with { Y = 0 };
-            }
+        SelectedItem = n;
+
+        if (Source.Count >= Viewport.Height)
+        {
+            Viewport = Viewport with { Y = SelectedItem.Value };
+        }
+        else
+        {
+            Viewport = Viewport with { Y = 0 };
         }
 
         return true;
@@ -422,7 +424,7 @@ public class ListView : View, IDesignable
 
     /// <summary>Changes the <see cref="SelectedItem"/> to the item at the top of the visible list.</summary>
     /// <returns></returns>
-    public virtual bool MovePageUp ()
+    public bool MovePageUp ()
     {
         if (Source is null || Source.Count == 0)
         {
@@ -436,23 +438,27 @@ public class ListView : View, IDesignable
             n = 0;
         }
 
-        if (n != SelectedItem && n < Source?.Count)
+        if (n == SelectedItem || !(n < Source?.Count))
         {
-            SelectedItem = n;
-            Viewport = Viewport with { Y = SelectedItem.Value };
+            return true;
         }
+
+        SelectedItem = n;
+        Viewport = Viewport with { Y = SelectedItem.Value };
 
         return true;
     }
 
     /// <summary>Changes the <see cref="SelectedItem"/> to the previous item in the list, scrolling the list if needed.</summary>
     /// <returns></returns>
-    public virtual bool MoveUp ()
+    public bool MoveUp ()
     {
         if (Source is null || Source.Count == 0)
         {
             return false; //Nothing for us to move to
         }
+
+        var moved = false;
 
         if (SelectedItem is null || SelectedItem >= Source.Count)
         {
@@ -460,6 +466,7 @@ public class ListView : View, IDesignable
             // valid values range, we should select the bottommost valid value.
             // This can occur if the backing data source changes.
             SelectedItem = Source.Count - 1;
+            moved = true;
         }
         else if (SelectedItem > 0)
         {
@@ -478,13 +485,16 @@ public class ListView : View, IDesignable
             {
                 Viewport = Viewport with { Y = SelectedItem.Value - Viewport.Height + 1 };
             }
+
+            moved = true;
         }
         else if (SelectedItem < Viewport.Y)
         {
             Viewport = Viewport with { Y = SelectedItem.Value };
+            moved = true;
         }
 
-        return true;
+        return moved;
     }
 
     /// <summary>Invokes the <see cref="OpenSelectedItem"/> event if it is defined.</summary>
@@ -508,32 +518,24 @@ public class ListView : View, IDesignable
     /// <param name="rowEventArgs"></param>
     public virtual void OnRowRender (ListViewRowEventArgs rowEventArgs) { RowRender?.Invoke (this, rowEventArgs); }
 
-
     /// <summary>This event is raised when the user Double-Clicks on an item or presses ENTER to open the selected item.</summary>
     public event EventHandler<ListViewItemEventArgs>? OpenSelectedItem;
 
     /// <summary>
     ///     Allow resume the <see cref="CollectionChanged"/> event from being invoked,
     /// </summary>
-    public void ResumeSuspendCollectionChangedEvent ()
-    {
-        if (Source is { })
-        {
-            Source.SuspendCollectionChangedEvent = false;
-        }
-    }
+    public void ResumeSuspendCollectionChangedEvent () { Source?.SuspendCollectionChangedEvent = false; }
 
     /// <summary>This event is invoked when this <see cref="ListView"/> is being drawn before rendering.</summary>
     public event EventHandler<ListViewRowEventArgs>? RowRender;
 
-    private int? _selectedItem = null;
-    private int? _lastSelectedItem = null;
+    private int? _lastSelectedItem;
 
     /// <summary>Gets or sets the index of the currently selected item.</summary>
     /// <value>The selected item or null if no item is selected.</value>
     public int? SelectedItem
     {
-        get => _selectedItem;
+        get;
         set
         {
             if (Source is null)
@@ -546,28 +548,28 @@ public class ListView : View, IDesignable
                 throw new ArgumentException (@"SelectedItem must be greater than 0 or less than the number of items.");
             }
 
-            _selectedItem = value;
+            field = value;
             OnSelectedChanged ();
             SetNeedsDraw ();
         }
     }
 
-    // TODO: Use standard event model
+    // TODO: Use CWP event model
     /// <summary>Invokes the <see cref="SelectedItemChanged"/> event if it is defined.</summary>
     /// <returns></returns>
     public virtual bool OnSelectedChanged ()
     {
-        if (SelectedItem != _lastSelectedItem)
+        if (SelectedItem == _lastSelectedItem)
         {
-            object? value = SelectedItem.HasValue && Source?.Count > 0 ? Source.ToList () [SelectedItem.Value] : null;
-            SelectedItemChanged?.Invoke (this, new (SelectedItem, value));
-            _lastSelectedItem = SelectedItem;
-            EnsureSelectedItemVisible ();
-
-            return true;
+            return false;
         }
 
-        return false;
+        object? value = SelectedItem.HasValue && Source?.Count > 0 ? Source.ToList () [SelectedItem.Value] : null;
+        SelectedItemChanged?.Invoke (this, new (SelectedItem, value));
+        _lastSelectedItem = SelectedItem;
+        EnsureSelectedItemVisible ();
+
+        return true;
     }
 
     /// <summary>This event is raised when the selected item in the <see cref="ListView"/> has changed.</summary>
@@ -624,22 +626,22 @@ public class ListView : View, IDesignable
     /// <remarks>Use <see cref="SetSource{T}"/> to set a new <see cref="IList"/> source.</remarks>
     public IListDataSource? Source
     {
-        get => _source;
+        get;
         set
         {
-            if (_source == value)
+            if (field == value)
             {
                 return;
             }
 
-            _source?.Dispose ();
-            _source = value;
+            field?.Dispose ();
+            field = value;
 
-            if (_source is { })
+            if (field is { })
             {
-                _source.CollectionChanged += Source_CollectionChanged;
-                SetContentSize (new Size (_source?.Length ?? Viewport.Width, _source?.Count ?? Viewport.Width));
-                KeystrokeNavigator.Collection = _source?.ToList ();
+                field.CollectionChanged += Source_CollectionChanged;
+                SetContentSize (new Size (field?.Length ?? Viewport.Width, field?.Count ?? Viewport.Width));
+                KeystrokeNavigator.Collection = field?.ToList ();
             }
 
             SelectedItem = null;
@@ -651,13 +653,7 @@ public class ListView : View, IDesignable
     /// <summary>
     ///     Allow suspending the <see cref="CollectionChanged"/> event from being invoked,
     /// </summary>
-    public void SuspendCollectionChangedEvent ()
-    {
-        if (Source is { })
-        {
-            Source.SuspendCollectionChangedEvent = true;
-        }
-    }
+    public void SuspendCollectionChangedEvent () { Source?.SuspendCollectionChangedEvent = true; }
 
     /// <summary>Gets or sets the index of the item that will appear at the top of the <see cref="View.Viewport"/>.</summary>
     /// <remarks>
@@ -685,33 +681,27 @@ public class ListView : View, IDesignable
     /// <returns><see langword="true"/> if unmarking was successful.</returns>
     public bool UnmarkAllButSelected ()
     {
-        if (!_allowsMarking)
+        if (!AllowsMarking)
         {
             return false;
         }
 
-        if (!AllowsMultipleSelection)
+        if (AllowsMultipleSelection)
         {
-            for (var i = 0; i < Source?.Count; i++)
-            {
-                if (Source.IsMarked (i) && i != SelectedItem)
-                {
-                    Source.SetMark (i, false);
+            return true;
+        }
 
-                    return true;
-                }
+        for (var i = 0; i < Source?.Count; i++)
+        {
+            if (Source.IsMarked (i) && i != SelectedItem)
+            {
+                Source.SetMark (i, false);
+
+                return true;
             }
         }
 
         return true;
-    }
-
-    /// <inheritdoc/>
-    protected override void Dispose (bool disposing)
-    {
-        Source?.Dispose ();
-
-        base.Dispose (disposing);
     }
 
     /// <summary>
@@ -733,7 +723,7 @@ public class ListView : View, IDesignable
         Rectangle f = Viewport;
         int item = Viewport.Y;
         bool focused = HasFocus;
-        int col = _allowsMarking ? 2 : 0;
+        int col = AllowsMarking ? 2 : 0;
         int start = Viewport.X;
 
         for (var row = 0; row < f.Height; row++, item++)
@@ -769,7 +759,7 @@ public class ListView : View, IDesignable
                     SetAttribute (current);
                 }
 
-                if (_allowsMarking)
+                if (AllowsMarking)
                 {
                     AddRune (
                              Source.IsMarked (item) ? AllowsMultipleSelection ? Glyphs.CheckStateChecked : Glyphs.Selected :
@@ -808,100 +798,21 @@ public class ListView : View, IDesignable
         }
 
         // Enable user to find & select an item by typing text
-        if (KeystrokeNavigator.Matcher.IsCompatibleKey (key))
-        {
-            int? newItem = KeystrokeNavigator?.GetNextMatchingItem (SelectedItem ?? null, (char)key);
-
-            if (newItem is { } && newItem != -1)
-            {
-                SelectedItem = (int)newItem;
-                EnsureSelectedItemVisible ();
-                SetNeedsDraw ();
-
-                return true;
-            }
-        }
-
-        return false;
-    }
-
-    /// <inheritdoc/>
-    protected override bool OnMouseEvent (MouseEventArgs me)
-    {
-        if (!me.Flags.HasFlag (MouseFlags.Button1Clicked)
-            && !me.Flags.HasFlag (MouseFlags.Button1DoubleClicked)
-            && me.Flags != MouseFlags.WheeledDown
-            && me.Flags != MouseFlags.WheeledUp
-            && me.Flags != MouseFlags.WheeledRight
-            && me.Flags != MouseFlags.WheeledLeft)
+        if (!KeystrokeNavigator.Matcher.IsCompatibleKey (key))
         {
             return false;
         }
 
-        if (!HasFocus && CanFocus)
-        {
-            SetFocus ();
-        }
+        int? newItem = KeystrokeNavigator.GetNextMatchingItem (SelectedItem ?? null, (char)key);
 
-        if (Source is null)
+        if (newItem is null or -1)
         {
             return false;
         }
 
-        if (me.Flags == MouseFlags.WheeledDown)
-        {
-            if (Viewport.Y + Viewport.Height < GetContentSize ().Height)
-            {
-                ScrollVertical (1);
-            }
-
-            return true;
-        }
-
-        if (me.Flags == MouseFlags.WheeledUp)
-        {
-            ScrollVertical (-1);
-
-            return true;
-        }
-
-        if (me.Flags == MouseFlags.WheeledRight)
-        {
-            if (Viewport.X + Viewport.Width < GetContentSize ().Width)
-            {
-                ScrollHorizontal (1);
-            }
-
-            return true;
-        }
-
-        if (me.Flags == MouseFlags.WheeledLeft)
-        {
-            ScrollHorizontal (-1);
-
-            return true;
-        }
-
-        if (me.Position.Y + Viewport.Y >= Source.Count
-            || me.Position.Y + Viewport.Y < 0
-            || me.Position.Y + Viewport.Y > Viewport.Y + Viewport.Height)
-        {
-            return true;
-        }
-
-        SelectedItem = Viewport.Y + me.Position.Y;
-
-        if (MarkUnmarkSelectedItem ())
-        {
-            // return true;
-        }
-
+        SelectedItem = (int)newItem;
+        EnsureSelectedItemVisible ();
         SetNeedsDraw ();
-
-        if (me.Flags == MouseFlags.Button1DoubleClicked)
-        {
-            return InvokeCommand (Command.Accept) is true;
-        }
 
         return true;
     }
@@ -921,5 +832,22 @@ public class ListView : View, IDesignable
         SetNeedsDraw ();
 
         OnCollectionChanged (e);
+    }
+
+    /// <inheritdoc/>
+    public bool EnableForDesign ()
+    {
+        ListWrapper<string> source = new (["List Item 1", "List Item two", "List Item Quattro", "Last List Item"]);
+        Source = source;
+
+        return true;
+    }
+
+    /// <inheritdoc/>
+    protected override void Dispose (bool disposing)
+    {
+        Source?.Dispose ();
+
+        base.Dispose (disposing);
     }
 }
