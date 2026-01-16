@@ -110,13 +110,6 @@
     <!-- i18 -->
     <!-- =================================================================== -->
     <ItemGroup>
-        <Compile Update="Resources\Strings.Designer.cs">
-            <DesignTime>true</DesignTime>
-            <AutoGen>true</AutoGen>
-            <DependentUpon>Strings.resx</DependentUpon>
-        </Compile>
-    </ItemGroup>
-    <ItemGroup>
         <EmbeddedResource Update="Resources\Strings.resx">
             <Generator>PublicResXFileCodeGenerator</Generator>
             <LastGenOutput>Strings.Designer.cs</LastGenOutput>
