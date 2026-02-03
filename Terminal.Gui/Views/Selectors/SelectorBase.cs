@@ -5,7 +5,7 @@ namespace Terminal.Gui.Views;
 /// <summary>
 ///     The abstract base class for <see cref="OptionSelector{TEnum}"/> and <see cref="FlagSelector{TFlagsEnum}"/>.
 /// </summary>
-public abstract class SelectorBase : View, IOrientation
+public abstract class SelectorBase : View, IOrientation, IValue<int?>
 {
     /// <summary>
     ///     Gets or sets the default Highlight Style.
@@ -32,22 +32,20 @@ public abstract class SelectorBase : View, IOrientation
         MouseBindings.Remove (MouseFlags.LeftButtonClicked);
     }
 
-    private SelectorStyles _styles;
-
     /// <summary>
     ///     Gets or sets the styles for the flag selector.
     /// </summary>
     public SelectorStyles Styles
     {
-        get => _styles;
+        get;
         set
         {
-            if (_styles == value)
+            if (field == value)
             {
                 return;
             }
 
-            _styles = value;
+            field = value;
 
             CreateSubViews ();
             UpdateChecked ();
@@ -84,14 +82,12 @@ public abstract class SelectorBase : View, IOrientation
         return base.OnHandlingHotKey (args);
     }
 
-    private int? _value;
-
     /// <summary>
     ///     Gets or sets the value of the selector. Will be <see langword="null"/> if no value is set.
     /// </summary>
     public virtual int? Value
     {
-        get => _value;
+        get;
         set
         {
             if (value is { } && Values is { } && !Values.Contains ((int)value))
@@ -99,36 +95,52 @@ public abstract class SelectorBase : View, IOrientation
                 throw new ArgumentOutOfRangeException (nameof (value), @$"Value must be one of the following: {string.Join (", ", Values)}");
             }
 
-            if (_value == value)
+            if (field == value)
             {
                 return;
             }
 
-            int? previousValue = _value;
-            _value = value;
+            int? previousValue = field;
+
+            // Raise IValue<int?>.ValueChanging (cancellable)
+            if (RaiseValueChanging (previousValue, value))
+            {
+                return;
+            }
+
+            field = value;
 
             UpdateChecked ();
-            RaiseValueChanged (previousValue);
+            RaiseValueChanged (previousValue, field);
         }
     }
 
+    #region IValue<int?> Implementation
+
     /// <summary>
-    ///     Raised the <see cref="ValueChanged"/> event.
+    ///     Raises the <see cref="ValueChanging"/> event.
     /// </summary>
-    /// <param name="previousValue"></param>
-    protected void RaiseValueChanged (int? previousValue)
+    /// <returns><see langword="true"/> if the change was cancelled.</returns>
+    protected bool RaiseValueChanging (int? currentValue, int? newValue)
     {
-        if (_valueField is { })
-        {
-            _valueField.Text = Value.ToString ()!;
-        }
+        ValueChangingEventArgs<int?> args = new (currentValue, newValue);
+        ValueChanging?.Invoke (this, args);
 
-        OnValueChanged (Value, previousValue);
+        return args.Handled;
+    }
 
-        if (Value.HasValue)
-        {
-            ValueChanged?.Invoke (this, new EventArgs<int?> (Value.Value));
-        }
+    /// <summary>
+    ///     Raises the <see cref="ValueChanged"/> event.
+    /// </summary>
+    /// <param name="previousValue">The value before the change.</param>
+    /// <param name="newValue">The value after the change.</param>
+    protected void RaiseValueChanged (int? previousValue, int? newValue)
+    {
+        _valueField?.Text = Value.ToString ()!;
+
+        OnValueChanged (newValue, previousValue);
+
+        ValueChanged?.Invoke (this, new ValueChangedEventArgs<int?> (previousValue, newValue));
     }
 
     /// <summary>
@@ -136,12 +148,13 @@ public abstract class SelectorBase : View, IOrientation
     /// </summary>
     protected virtual void OnValueChanged (int? value, int? previousValue) { }
 
-    /// <summary>
-    ///     Raised when <see cref="Value"/> has changed.
-    /// </summary>
-    public event EventHandler<EventArgs<int?>>? ValueChanged;
+    /// <inheritdoc/>
+    public event EventHandler<ValueChangingEventArgs<int?>>? ValueChanging;
 
-    private IReadOnlyList<int>? _values;
+    /// <inheritdoc/>
+    public event EventHandler<ValueChangedEventArgs<int?>>? ValueChanged;
+
+    #endregion
 
     /// <summary>
     ///     Gets or sets the option values. If <see cref="Values"/> is <see langword="null"/>, get will
@@ -151,9 +164,9 @@ public abstract class SelectorBase : View, IOrientation
     {
         get
         {
-            if (_values is { })
+            if (field is { })
             {
-                return _values;
+                return field;
             }
 
             // Use Labels and assume 0..Labels.Count - 1
@@ -161,12 +174,12 @@ public abstract class SelectorBase : View, IOrientation
         }
         set
         {
-            _values = value;
+            field = value;
 
             // Ensure Value defaults to the first valid entry in Values if not already set
-            if (Value is null && _values?.Any () == true)
+            if (Value is null && field?.Any () == true)
             {
-                Value = _values.First ();
+                Value = field.First ();
             }
 
             CreateSubViews ();
@@ -174,17 +187,15 @@ public abstract class SelectorBase : View, IOrientation
         }
     }
 
-    private IReadOnlyList<string>? _labels;
-
     /// <summary>
     ///     Gets or sets the list of labels for each value in <see cref="Values"/>.
     /// </summary>
     public IReadOnlyList<string>? Labels
     {
-        get => _labels;
+        get;
         set
         {
-            _labels = value;
+            field = value;
 
             CreateSubViews ();
             UpdateChecked ();
@@ -299,17 +310,12 @@ public abstract class SelectorBase : View, IOrientation
         get => _horizontalSpace;
         set
         {
-            if (_horizontalSpace != value)
+            if (_horizontalSpace == value)
             {
-                _horizontalSpace = value;
-                SetLayout ();
-
-                // Pos.Align requires extra layout; good practice to call
-                // Layout to ensure Pos.Align gets updated
-                // BUGBUG: This Layout call is a hack to work around some bug in Layout.
-                // BUGBUG: See https://github.com/gui-cs/Terminal.Gui/issues/4522
-                Layout ();
+                return;
             }
+            _horizontalSpace = value;
+            SetLayout ();
         }
     }
 
@@ -319,13 +325,10 @@ public abstract class SelectorBase : View, IOrientation
 
         if (Values?.Count > 0 && Orientation == Orientation.Vertical)
         {
-            // BUGBUG: This Layout call is a hack to work around some bug in Layout.
-            // BUGBUG: See https://github.com/gui-cs/Terminal.Gui/issues/4522
             maxNaturalCheckBoxWidth = SubViews.OfType<CheckBox> ()
                                               .Max (v =>
                                                     {
                                                         v.SetRelativeLayout (App?.Screen.Size ?? new Size (2048, 2048));
-                                                        v.Layout ();
 
                                                         return v.Frame.Width;
                                                     });
@@ -338,7 +341,7 @@ public abstract class SelectorBase : View, IOrientation
                 SubViews.ElementAt (i).X = 0;
                 SubViews.ElementAt (i).Y = Pos.Align (Alignment.Start, AlignmentModes.StartToEnd);
                 SubViews.ElementAt (i).Margin!.Thickness = new Thickness (0);
-                SubViews.ElementAt (i).Width = Dim.Func (_ => Math.Max (Viewport.Width, maxNaturalCheckBoxWidth));
+                SubViews.ElementAt (i).Width = Dim.Func (_ => maxNaturalCheckBoxWidth);
             }
             else
             {
@@ -389,16 +392,7 @@ public abstract class SelectorBase : View, IOrientation
 
     /// <summary>Called when <see cref="Orientation"/> has changed.</summary>
     /// <param name="newOrientation"></param>
-    public void OnOrientationChanged (Orientation newOrientation)
-    {
-        SetLayout ();
-
-        // Pos.Align requires extra layout; good practice to call
-        // Layout to ensure Pos.Align gets updated
-        // BUGBUG: This Layout call is a hack to work around some bug in Layout.
-        // BUGBUG: See https://github.com/gui-cs/Terminal.Gui/issues/4522
-        Layout ();
-    }
+    public void OnOrientationChanged (Orientation newOrientation) => SetLayout ();
 
     #endregion IOrientation
 }

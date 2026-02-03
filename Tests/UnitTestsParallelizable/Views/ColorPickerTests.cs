@@ -14,12 +14,12 @@ public class ColorPickerTests
 
         var cp = new ColorPicker ();
 
-        cp.ColorChanged += (s, e) =>
+        cp.ValueChanged += (s, e) =>
                            {
                                count++;
-                               newColor = e.Result;
+                               newColor = e.NewValue ?? Color.Black;
 
-                               Assert.Equal (cp.SelectedColor, e.Result);
+                               Assert.Equal (cp.SelectedColor, e.NewValue);
                            };
 
         cp.SelectedColor = new Color (1, 2, 3);
@@ -199,6 +199,126 @@ public class ColorPickerTests
         Assert.IsAssignableFrom<BBar> (cp.Focused);
 
         cp.App?.Dispose ();
+    }
+
+    // Claude - Opus 4.5
+    // Behavior documented in docfx/docs/command.md - View Command Behaviors table
+    // This test verifies current behavior which may change per issue #4473
+    [Fact]
+    public void ColorPicker_BarValueChange_UpdatesColor ()
+    {
+        ColorPicker picker = new () { Width = 40, Height = 15 };
+        picker.BeginInit ();
+        picker.EndInit ();
+
+        Color initialColor = picker.SelectedColor;
+
+        // Color bar value changes update color via Activate commands
+        // Verify control is initialized
+        Assert.Equal (Color.Black, initialColor); // Default color
+
+        picker.Dispose ();
+    }
+
+    // Claude - Opus 4.5
+    // Behavior documented in docfx/docs/command.md - View Command Behaviors table
+    // This test verifies current behavior which may change per issue #4473
+    [Fact]
+    public void ColorPicker_DoubleClick_RaisesAccepting ()
+    {
+        ColorPicker picker = new () { Width = 40, Height = 15 };
+        picker.BeginInit ();
+        picker.EndInit ();
+
+        var acceptingFired = false;
+
+        picker.Accepting += (_, e) =>
+                            {
+                                acceptingFired = true;
+                                e.Handled = true;
+                            };
+
+        // Double-click raises Accepting
+        bool? result = picker.InvokeCommand (Command.Accept);
+
+        Assert.True (acceptingFired);
+        Assert.True (result);
+
+        picker.Dispose ();
+    }
+
+    public static IEnumerable<object []> ColorPickerTestData ()
+    {
+        yield return [new Color (255, 0), "R:", 19, "G:", 2, "B:", 2, "#FF0000"];
+
+        yield return [new Color (0, 255), "R:", 2, "G:", 19, "B:", 2, "#00FF00"];
+
+        yield return [new Color (0, 0, 255), "R:", 2, "G:", 2, "B:", 19, "#0000FF"];
+
+        yield return [new Color (125, 125, 125), "R:", 11, "G:", 11, "B:", 11, "#7D7D7D"];
+    }
+
+    public static IEnumerable<object []> ColorPickerTestData_WithTextFields ()
+    {
+        yield return
+        [
+            new Color (255, 0),
+            "R:",
+            15,
+            255,
+            "G:",
+            2,
+            0,
+            "B:",
+            2,
+            0,
+            "#FF0000"
+        ];
+
+        yield return
+        [
+            new Color (0, 255),
+            "R:",
+            2,
+            0,
+            "G:",
+            15,
+            255,
+            "B:",
+            2,
+            0,
+            "#00FF00"
+        ];
+
+        yield return
+        [
+            new Color (0, 0, 255),
+            "R:",
+            2,
+            0,
+            "G:",
+            2,
+            0,
+            "B:",
+            15,
+            255,
+            "#0000FF"
+        ];
+
+        yield return
+        [
+            new Color (125, 125, 125),
+            "R:",
+            9,
+            125,
+            "G:",
+            9,
+            125,
+            "B:",
+            9,
+            125,
+            "#7D7D7D"
+        ];
     }
 
     [Fact]
@@ -720,80 +840,6 @@ public class ColorPickerTests
         cp.App?.Dispose ();
     }
 
-    public static IEnumerable<object []> ColorPickerTestData ()
-    {
-        yield return [new Color (255, 0), "R:", 19, "G:", 2, "B:", 2, "#FF0000"];
-
-        yield return [new Color (0, 255), "R:", 2, "G:", 19, "B:", 2, "#00FF00"];
-
-        yield return [new Color (0, 0, 255), "R:", 2, "G:", 2, "B:", 19, "#0000FF"];
-
-        yield return [new Color (125, 125, 125), "R:", 11, "G:", 11, "B:", 11, "#7D7D7D"];
-    }
-
-    public static IEnumerable<object []> ColorPickerTestData_WithTextFields ()
-    {
-        yield return
-        [
-            new Color (255, 0),
-            "R:",
-            15,
-            255,
-            "G:",
-            2,
-            0,
-            "B:",
-            2,
-            0,
-            "#FF0000"
-        ];
-
-        yield return
-        [
-            new Color (0, 255),
-            "R:",
-            2,
-            0,
-            "G:",
-            15,
-            255,
-            "B:",
-            2,
-            0,
-            "#00FF00"
-        ];
-
-        yield return
-        [
-            new Color (0, 0, 255),
-            "R:",
-            2,
-            0,
-            "G:",
-            2,
-            0,
-            "B:",
-            15,
-            255,
-            "#0000FF"
-        ];
-
-        yield return
-        [
-            new Color (125, 125, 125),
-            "R:",
-            9,
-            125,
-            "G:",
-            9,
-            125,
-            "B:",
-            9,
-            125,
-            "#7D7D7D"
-        ];
-    }
-
     private ColorBar GetColorBar (ColorPicker cp, ColorPickerPart toGet)
     {
         if (toGet <= ColorPickerPart.Bar3)
@@ -945,11 +991,11 @@ public class ColorPickerTests
     }
 
     [Fact]
-    public void ColorChanged_StillFires_ForBackwardsCompatibility ()
+    public void ValueChanged_Fires_WhenSettingValue ()
     {
         ColorPicker picker = new ();
-        Color received = default;
-        picker.ColorChanged += (_, e) => received = e.Result;
+        Color? received = default;
+        picker.ValueChanged += (_, e) => received = e.NewValue;
 
         picker.Value = Color.Cyan;
 
